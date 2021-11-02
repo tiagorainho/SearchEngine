@@ -13,7 +13,14 @@ class Tokenizer:
                  min_token_length: int = None,
                  stop_words_path: str = None,
                  stem_lang: str = None) -> None:
+        """
+        __init__ creates a new instance of Tokenizer
 
+        :param min_token_length: min length of accepted tokens
+        :param stop_words_path: path to the file of stop words
+        :param stem_lang: language of the tokens
+        :return: None
+        """
         self.min_token_length = min_token_length
         self.snow_stemmer = SnowballStemmer(
             language=stem_lang) if stem_lang != None else None
@@ -25,6 +32,12 @@ class Tokenizer:
             self.stop_words = None
 
     def tokenize(self, text: str):
+        """
+        tokenize reads a text and tokenizes it using provided settings 
+
+        :param text: variable length text to tokenize
+        :return: None
+        """
         no_ponctuation = filter(lambda w: w not in punctuation, text)
         lowered = "".join(no_ponctuation).lower()
         tokens = set(lowered.split(" "))
