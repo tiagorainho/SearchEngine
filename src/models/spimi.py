@@ -32,9 +32,12 @@ class Spimi():
     @property
     def _inverted_index_size(self) -> int:
         """
-        Return the sum of all the positions used in the index
+        Return the weight of the inverted index
+
+        :return: integer
         """
-        return sum([len(posting.positions) for posting_list in self.inverted_index.values() for posting in posting_list])
+        return len(self.inverted_index)
+        #return sum([len(posting.positions) for posting_list in self.inverted_index.values() for posting in posting_list])
 
     
     def add_document(self, doc_id:int, tokens:List[str]) -> None:
@@ -45,10 +48,10 @@ class Spimi():
         :param tokens: list of tokens from the document
         :return: None
         """
+        if(self._inverted_index_size >= self.MAX_BLOCK_SIZE or psutil.virtual_memory().percent >= self.MAX_RAM_USAGE):
+            self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
+            self.inverted_index = dict()
         for position, token in enumerate(tokens):
-            if(self._inverted_index_size >= self.MAX_BLOCK_SIZE or psutil.virtual_memory().percent >= self.MAX_RAM_USAGE):
-                self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
-                self.inverted_index = dict()
             self._add_token(token, doc_id, position)
     
 
