@@ -19,5 +19,9 @@ class Posting:
         self.positions.append(position)
         self.occurrences += 1
     
+    def add_all(self, positions: List[int]) -> None:
+        for position in positions:
+            self.add(position)
+    
     def __repr__(self) -> str:
-        return '{doc_id: ' + str(self.doc_id) +", " + 'positions: ' + str(self.positions) + '}'
+        return '{' + str(self.doc_id) +':' + str(self.positions)[1:-1].replace(' ', '') + '}'
