@@ -1,6 +1,6 @@
 
 from typing import Generator, List, Tuple
-from models.spimi import Spimi
+from models.spimi2 import Spimi
 from models.index import InvertedIndex
 import random, string, time, os, glob
 
@@ -26,16 +26,16 @@ def create_docs(number_of_docs:int, review_length:int, possible_tokens_len:int=5
 
 def main():
     random.seed(100)
-    
+
     # remove blocks for easier understanding of the generated blocks
     remove_blocks(os.path.join(os.path.dirname(__file__), f'../{BLOCK_DIR}'))
 
-    indexer = Spimi(max_ram_usage=95, max_block_size=20000, auxiliary_dir=f'../../{BLOCK_DIR}')
+    indexer = Spimi(max_ram_usage=95, max_block_size=10000, auxiliary_dir=f'../../{BLOCK_DIR}')
 
     #indexer.add_document(doc_id=1, tokens=["bem", "tudo", "sou"])
     #indexer.add_document(doc_id=2, tokens=["tiago", "bem", "chamo-me", "oi", "eu", "bem","o", "tiago", "bem"])
 
-    doc_generator = create_docs(number_of_docs=100000, review_length=70, possible_tokens_len=280000)
+    doc_generator = create_docs(number_of_docs=1000, review_length=70, possible_tokens_len=280000)
     print("Creating documents and indexing")
     start = time.time()
     for i, (doc_id, tokens) in enumerate(doc_generator):
@@ -45,7 +45,7 @@ def main():
     print(f"time to create blocks: {time.time()-start}")
     print("Index construction")
     start = time.time()
-    index = InvertedIndex(indexer.construct_index(f'../../{OUTPUT_INDEX}'), [f'../../{OUTPUT_INDEX}'])
+    index = InvertedIndex(indexer.construct_index(f'../../{OUTPUT_INDEX}'))
     print(f"time to create the main index: {time.time()-start}")
 
     #print(index)
