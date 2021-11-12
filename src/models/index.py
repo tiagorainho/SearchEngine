@@ -1,6 +1,5 @@
 
 from typing import Dict, List
-import pickle, os
 from models.posting import Posting
 
 
@@ -8,7 +7,6 @@ class InvertedIndex:
     inverted_index: Dict[str, List[Posting]]
 
     # tratar de deixar posting lists em memoria com base nas pesquisas feitas
-
 
     def __init__(self, inverted_index:Dict[str, List[Posting]]) -> None:
         self.inverted_index = inverted_index if inverted_index != None else dict()

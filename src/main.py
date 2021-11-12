@@ -4,6 +4,8 @@ from models.spimi2 import Spimi
 from models.index import InvertedIndex
 import random, string, time, os, glob
 
+import cProfile
+
 
 BLOCK_DIR = 'cache/blocks'
 OUTPUT_INDEX = f'cache/index/{time.time()}.index'
@@ -35,7 +37,7 @@ def main():
     #indexer.add_document(doc_id=1, tokens=["bem", "tudo", "sou"])
     #indexer.add_document(doc_id=2, tokens=["tiago", "bem", "chamo-me", "oi", "eu", "bem","o", "tiago", "bem"])
 
-    doc_generator = create_docs(number_of_docs=1000, review_length=70, possible_tokens_len=280000)
+    doc_generator = create_docs(number_of_docs=10000, review_length=70, possible_tokens_len=2800)
     print("Creating documents and indexing")
     start = time.time()
     for i, (doc_id, tokens) in enumerate(doc_generator):
@@ -43,13 +45,13 @@ def main():
             print(i)
         indexer.add_document(doc_id = doc_id, tokens=tokens)
     print(f"time to create blocks: {time.time()-start}")
-    print("Index construction")
-    start = time.time()
-    index = InvertedIndex(indexer.construct_index(f'../../{OUTPUT_INDEX}'))
-    print(f"time to create the main index: {time.time()-start}")
+    #print("Index construction")
+    #start = time.time()
+    #index = InvertedIndex(indexer.construct_index(f'../../{OUTPUT_INDEX}'))
+    #print(f"time to create the main index: {time.time()-start}")
 
     #print(index)
 
 
 if __name__ == '__main__':
-    main()
+    cProfile.run('main()')

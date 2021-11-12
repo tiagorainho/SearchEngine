@@ -2,7 +2,7 @@ from io import FileIO
 from typing import Dict, Generator, List, Tuple
 from models.index import InvertedIndex
 from models.posting import Posting
-import psutil, heapq, json, os
+import psutil, heapq, os
 
 
 class Spimi():
@@ -55,7 +55,7 @@ class Spimi():
             if(self._inverted_index_size >= self.MAX_BLOCK_SIZE):
                 self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
                 self.inverted_index = InvertedIndex(dict())
-            self._add_token(token, doc_id, position)
+            self.inverted_index.add_token(token, doc_id, position)
     
 
     def _write_block_to_disk(self, output_file:str) -> None:
@@ -70,10 +70,6 @@ class Spimi():
                 lines = f"{term} {' '.join([str(posting) for posting in self.inverted_index.inverted_index[term]])}\n"
                 file.write(lines)
         self.block_number += 1
-    
-
-    def _add_token(self, token:str, doc_id:int, position:int) -> None:
-        self.inverted_index.add_token(token, doc_id, position)
 
 
     def object_to_save(self):
@@ -101,7 +97,7 @@ class Spimi():
         :param file: file io which means it is already opened
         :return: list of at most MAX_USAGE_BLOCK strings read by the file
         """
-        return [file.readline().replace('\n', '') for _ in range(self.MAX_USAGE_BLOCK)]
+        return [file.readline().replace('\n', '') for _ in range(10000)] # self.MAX_USAGE_BLOCK
     
 
     def get_posting_list_from_line(self, line) -> List[Posting]:

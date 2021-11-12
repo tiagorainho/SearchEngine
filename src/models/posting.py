@@ -11,15 +11,15 @@ class Posting:
         self.doc_id = docId
         self.occurrences = 0
         self.positions = []
-        for position in positions:
-            self.add(position)
+        if positions != []:
+            self.add_multiple(positions)
         
 
     def add(self, position: int) -> None:
         self.positions.append(position)
         self.occurrences += 1
     
-    def add_all(self, positions: List[int]) -> None:
+    def add_multiple(self, positions: List[int]) -> None:
         for position in positions:
             self.add(position)
     
