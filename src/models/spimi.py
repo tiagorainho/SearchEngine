@@ -2,7 +2,7 @@ from io import FileIO
 from typing import Dict, Generator, List, Tuple
 from models.index import InvertedIndex
 from models.posting import Posting
-import psutil, heapq, json, os
+import psutil, heapq, os
 
 
 class Spimi():
@@ -12,12 +12,12 @@ class Spimi():
     MAX_RAM_USAGE: int
     MAX_USAGE_BLOCK: int
     block_number: int
-    inverted_index: Dict[str, List[Posting]]
+    inverted_index: InvertedIndex
     
 
     def __init__(self, max_ram_usage:int = 85, max_block_size:int = 10, auxiliary_dir:str = 'cache/blocks') -> None:
         """
-        Creates a new instance of a SPIMI indexer, this is used to create indexes
+        Creates a new instance of a SPIMI indexer, this is used to create indexes and initialize static variables
 
         :return: None
         """
@@ -26,17 +26,17 @@ class Spimi():
         self.AUXILIARY_DIR = auxiliary_dir
         self.MAX_USAGE_BLOCK = 3
         self.block_number = 0
-        self.inverted_index = dict()
+        self.inverted_index = InvertedIndex(dict())
     
 
     @property
     def _inverted_index_size(self) -> int:
         """
-        Return the weight of the inverted index
+        Return the size of the inverted index
 
         :return: integer
         """
-        return len(self.inverted_index)
+        return len(self.inverted_index.inverted_index)
         #return sum([len(posting.positions) for posting_list in self.inverted_index.values() for posting in posting_list])
 
     
@@ -48,11 +48,14 @@ class Spimi():
         :param tokens: list of tokens from the document
         :return: None
         """
-        if(self._inverted_index_size >= self.MAX_BLOCK_SIZE or psutil.virtual_memory().percent >= self.MAX_RAM_USAGE):
+        if(psutil.virtual_memory().percent >= self.MAX_RAM_USAGE):
             self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
-            self.inverted_index = dict()
+            self.inverted_index = InvertedIndex(dict())
         for position, token in enumerate(tokens):
-            self._add_token(token, doc_id, position)
+            if(self._inverted_index_size >= self.MAX_BLOCK_SIZE):
+                self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
+                self.inverted_index = InvertedIndex(dict())
+            self.inverted_index.add_token(token, doc_id, position)
     
 
     def _write_block_to_disk(self, output_file:str) -> None:
@@ -63,72 +66,10 @@ class Spimi():
         :return: None
         """
         with open(os.path.join(os.path.dirname(__file__), output_file), 'w') as file:
-            for term in self.sorted_terms():
-                lines = f"{term} {' '.join([str(posting) for posting in self.inverted_index[term]])}\n"
+            for term in self.inverted_index.sorted_terms():
+                lines = f"{term} {self.inverted_index.inverted_index[term]}\n"
                 file.write(lines)
         self.block_number += 1
-
-
-    def _add_tokens(self, doc_id:int, tokens:List[str], start_position:int=0) -> None:
-        """
-        Adds the tokens to the inverted index with the respective document id and start position of the first element of the tokens in the file
-
-        :param doc_id: document id
-        :param tokens: list of tokens contained in the document
-        :param start_position = 0: start position of the first element of the token list
-        :return: None
-        """
-        for position, token in enumerate(tokens):
-            self._add_token(token, doc_id, position+start_position)
-
-
-    def sorted_terms(self) -> List[str]:
-        """
-        Returns a list of the tokens sorted by alphabetic order
-
-        :return: list of sorted tokens based on the string comparison after normalizing to lower case letters
-        """
-        return sorted(list(self.inverted_index.keys()), key=lambda term: term.lower())
-    
-
-    def _add_token(self, token:str, doc_id:int, position:int) -> None:
-        """
-        :description: private function that adds the document id and position to the Postings list of the respective token
-
-        :param token: token to be added
-        :param doc_id: document id
-        :param position: position of the token in the respective document id
-        :return: None
-        """
-        if token in self.inverted_index:
-            self._update_posting(token, doc_id, position)
-        else:
-            posting = Posting(doc_id)
-            posting.add(position)
-            self.inverted_index[token] = [posting]
-            
-    
-    def _update_posting(self, token:str, doc_id:int, position:int) -> None:
-        """
-        :description: private function that updates or created a Posting inside the respective token Posting list
-
-        :param token: token to be added
-        :param doc_id: document id
-        :param position: position of the token in the respective document id
-        :return: None
-        """
-        for posting in self.inverted_index[token]:
-            if posting.doc_id == doc_id:
-                posting.add(position)
-                return
-        posting = Posting(doc_id)
-        posting.add(position)
-        self.inverted_index[token].append(posting)
-        
-
-    def __hash__(self):
-        inverted_index_json = json.dumps(self.sorted_terms())
-        return hash(inverted_index_json)
 
 
     def object_to_save(self):
@@ -147,6 +88,8 @@ class Spimi():
         return str
     
 
+    
+
     def get_lines_from_block(self, file:FileIO) -> List[str]:
         """
         reads lines from a file IO based on the MAX_USAGE_BLOCK variable
@@ -154,7 +97,7 @@ class Spimi():
         :param file: file io which means it is already opened
         :return: list of at most MAX_USAGE_BLOCK strings read by the file
         """
-        return [file.readline().replace('\n', '') for _ in range(self.MAX_USAGE_BLOCK)]
+        return [file.readline().replace('\n', '') for _ in range(10000)] # self.MAX_USAGE_BLOCK
     
 
     def get_posting_list_from_line(self, line) -> List[Posting]:
@@ -201,7 +144,7 @@ class Spimi():
         # aux lambda functions
         get_term_from_line = lambda line: line.split(' ')[0]
 
-        # used to abstract the generators
+        # generators buffer
         lines_buffer = []
         for generator in generators:
             try:
@@ -288,7 +231,7 @@ class Spimi():
         """
 
         # add last block
-        if len(self.inverted_index) > 0:
+        if self._inverted_index_size > 0:
             self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
 
         # get all files from the postings directory

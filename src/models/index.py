@@ -1,10 +1,10 @@
 
 from typing import Dict, List
 from models.posting import Posting
-
+from models.posting_list import PostingList
 
 class InvertedIndex:
-    inverted_index: Dict[str, List[Posting]]
+    inverted_index: Dict[str, PostingList]
 
     # tratar de deixar posting lists em memoria com base nas pesquisas feitas
 
@@ -21,12 +21,14 @@ class InvertedIndex:
         :param position: position of the token in the respective document id
         :return: None
         """
-        if token in self.inverted_index:
-            self._update_posting_list(token, doc_id, position)
+        posting_list = self.inverted_index.get(token)
+        if posting_list == None:
+            posting_list = PostingList()
+            posting = Posting(doc_id, [position])
+            posting_list.add(posting)
+            self.inverted_index[token] = posting_list
         else:
-            posting = Posting(doc_id)
-            posting.add(position)
-            self.inverted_index[token] = [posting]
+            posting_list.add(Posting(doc_id, [position]))            
     
 
     def _update_posting_list(self, token:str, doc_id:int, position:int) -> None:
