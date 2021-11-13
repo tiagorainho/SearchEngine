@@ -38,6 +38,7 @@ class Tokenizer:
         :param text: variable length text to tokenize
         :return: None
         """
+
         no_ponctuation = filter(lambda w: w not in punctuation, text)
         lowered = "".join(no_ponctuation).lower()
         tokens = set(lowered.split(" "))

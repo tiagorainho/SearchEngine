@@ -1,4 +1,4 @@
-from typing import Set
+from typing import Dict, List, Set, Tuple
 from pathlib import Path
 import csv
 import sys
@@ -28,21 +28,21 @@ class Parser:
 
         csv.field_size_limit(sys.maxsize)
 
-    def parse(self, delimiter: str) -> str:
+    def parse(self, delimiter: str) -> Dict[int, str]:
         """
         parse parses the current file using provided columns and doc_id_column
 
         :param delimiter: csv delimiter char
-        :return: Parsed text
+        :return: Dictionary containing doc id as key and text as value
         """
-        text = ""
+        parsed = dict()
 
-        with open(self.file_path) as file:
+        with open(self.file_path, encoding='utf-8') as file:
             data = csv.DictReader(file, delimiter=delimiter)
 
             for row in data:
                 values = [row[k] for k in row.keys(
-                ) if k in self.columns or k == self.doc_id_column]
-                text += ",".join(values)
+                ) if k in self.columns]
+                parsed[row[self.doc_id_column]] = ",".join(values)
 
-        return text
+        return parsed
