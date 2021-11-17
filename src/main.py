@@ -1,5 +1,6 @@
 
 from io import TextIOWrapper
+from pathlib import Path
 from models.spimi import Spimi
 from models.index import InvertedIndex
 from models.posting import PostingType
@@ -104,6 +105,8 @@ class Main:
         print(f"Search in {(t2-t1)* 100}ms")
 
     def main(self):
+        for path in Path("cache/index/").rglob("*.block"):
+            print(path)
         if self.args.documents:
             self.index()
         elif self.args.search_index and self.args.search_terms:

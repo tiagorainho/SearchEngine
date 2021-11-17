@@ -8,6 +8,7 @@ import psutil
 import heapq
 import os
 import time
+import glob
 
 
 class Spimi():
@@ -213,6 +214,10 @@ class Spimi():
         index = self._merge_blocks(input_paths, ouput_path)
 
         return index
+
+    def clear_blocks(self):
+        for f in glob.glob(f'cache/blocks/*.block'):
+            os.remove(f)
 
 
 class Node:
