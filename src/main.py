@@ -1,12 +1,7 @@
-
-from io import TextIOWrapper
-from pathlib import Path
 from models.spimi import Spimi
 from models.index import InvertedIndex
 from models.posting import PostingType
 import time
-import os
-import glob
 from parser import Parser
 from tokenizer import Tokenizer
 from argparse import ArgumentParser
@@ -105,7 +100,6 @@ class Main:
         print(f"Search in {(t2-t1)* 100}ms")
 
     def main(self):
-
         if self.args.documents:
             self.index()
         elif self.args.search_index and self.args.search_terms:
