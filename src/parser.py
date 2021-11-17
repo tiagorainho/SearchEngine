@@ -28,7 +28,6 @@ class Parser:
 
         csv.field_size_limit(sys.maxsize)
 
-
     def parse(self, delimiter: str) -> Dict[int, str]:
         """
         parse parses the current file using provided columns and doc_id_column

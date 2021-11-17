@@ -1,43 +1,43 @@
 
+from io import FileIO
 from typing import Dict, List, Set, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
+from pathlib import Path
+import re
+
 
 class InvertedIndex:
     inverted_index: Dict[str, PostingList]
+    file: FileIO
     posting_list_class: PostingList
-    delimiter:str = ' '
+    delimiter: str = ' '
 
     # tratar de deixar posting lists em memoria com base nas pesquisas feitas
 
-    def __init__(self, inverted_index:Dict[str, PostingList], posting_type:PostingType) -> None:
+    def __init__(self, inverted_index: Dict[str, PostingList], posting_type: PostingType, output_path: str = None) -> None:
         self.inverted_index = inverted_index if inverted_index != None else dict()
         self.posting_list_class = PostingListFactory(posting_type)
+        self.file = open(output_path, "r") if output_path != None else None
 
+    def light_search(self, terms: List[str]) -> List[int]:
+        lines = self.file.readlines(100)
+        matches = []
 
-    def light_search(self, terms:List[str]) -> List[int]:
-        retrieved_documents:Set[int] = set()
-        for term in terms:
-            posting_list: PostingList = self.inverted_index.get(term)
-            if term in posting_list:
-                
-                if posting_list == False:
-                    # the postings are in disk, we must retrieve them
-                    pass
-                else:
-                    # get documents in memory that have the term
-                    documents = posting_list.get_documents()
-                    for document in documents:
-                        retrieved_documents.add(document)
+        while len(lines) != 0:
+            for line in lines:
+                for term in terms:
+                    if line.startswith(f"{term} "):
+                        matches.append(line)
 
-        return list(retrieved_documents)
+            lines = self.file.readlines(100)
 
+        return matches
 
     def clear(self):
         self.inverted_index.clear()
 
-
-    def add_token(self, token:str, doc_id:int, position:int) -> None:
+    def add_token(self, token: str, doc_id: int, position: int) -> None:
         """
         Adds the document id and position to the Postings list of the respective token
 
@@ -52,7 +52,6 @@ class InvertedIndex:
             self.inverted_index[token] = posting_list
         posting_list.add(doc_id, position)
 
-    
     def sorted_terms(self):
         """
         Returns a list of the terms sorted by alphabetic order
@@ -61,18 +60,15 @@ class InvertedIndex:
         """
         return sorted(list(self.inverted_index.keys()))
 
-
-    def save(self, output_file:str) -> None:
+    def save(self, output_file: str) -> None:
         with open(output_file, 'w') as file:
             for term in self.sorted_terms():
                 line = f'{ term }{ self.delimiter }{ self.inverted_index[term] }\n'
                 file.write(line)
 
-
-    def load(self, line:str) -> Tuple[str, PostingList]:
+    def load(self, line: str) -> Tuple[str, PostingList]:
         parts = line.split(self.delimiter, 1)
         return parts[0], self.posting_list_class.load(parts[1])
-        
 
     def __repr__(self):
         repr = ''
