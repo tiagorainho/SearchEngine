@@ -10,7 +10,7 @@ from time import sleep
 
 class InvertedIndex:
     inverted_index: Dict[str, PostingList]
-    file: FileIO
+    file: str
     posting_list_class: PostingList
     delimiter: str = ' '
 
@@ -19,35 +19,35 @@ class InvertedIndex:
     def __init__(self, inverted_index: Dict[str, PostingList], posting_type: PostingType, output_path: str = None) -> None:
         self.inverted_index = inverted_index if inverted_index != None else dict()
         self.posting_list_class = PostingListFactory(posting_type)
-        self.file = open(output_path, "r") if output_path != None else None
+        self.file = output_path
 
     def light_search(self, terms: List[str]) -> List[int]:
         matches = []
-        self.file.seek(0, 2)
-        file_size = self.file.tell()
 
-        for term in terms:
-            min = 0
-            max = file_size
-            middle = (max + min) / 2
-            self.file.seek(0)
-            line = self.file.readline()
-            line_term = line.split(self.delimiter)[0]
+        with open(self.file, "r", encoding='utf-8', errors='ignore') as file:
+            
+            file.seek(0, 2)
+            file_size = file.tell()
 
-            while term != line_term and max - min > 1:
-                middle = int((max + min) / 2)
-                self.file.seek(middle)
-                self.file.readline()
-                line = self.file.readline()
-                line_term = line.split(self.delimiter)[0]
+            for term in terms:
+                min = 0
+                max = file_size
+                line_term = ''
 
-                if term < line_term:
-                    max = middle
-                elif term > line_term:
-                    min = middle
-                    
-            if term == line_term:
-                matches.append(line)
+                while term != line_term and max - min > 1:
+                    middle = int((max + min) / 2)
+                    file.seek(middle)
+                    file.readline()
+                    line = file.readline()
+                    line_term = line.split(self.delimiter)[0]
+
+                    if term < line_term:
+                        max = middle
+                    elif term > line_term:
+                        min = middle
+
+                if term == line_term:
+                    matches.append(line)
 
         return matches
 
