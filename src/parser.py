@@ -1,4 +1,4 @@
-from typing import Dict, List, Set, Tuple
+from typing import Dict, Set
 from pathlib import Path
 import csv
 import sys
@@ -27,6 +27,7 @@ class Parser:
         self.columns = columns
 
         csv.field_size_limit(sys.maxsize)
+
 
     def parse(self, delimiter: str) -> Dict[int, str]:
         """

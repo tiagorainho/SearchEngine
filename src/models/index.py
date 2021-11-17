@@ -1,16 +1,23 @@
 
-from typing import Dict, List
-from models.posting import Posting
-from models.posting_list import PostingList
+from typing import Dict, List, Tuple
+from models.posting import PostingType
+from models.posting_list import PostingList, PostingListFactory
 
 class InvertedIndex:
     inverted_index: Dict[str, PostingList]
+    posting_list_class: PostingList
+    delimiter:str = ' '
 
     # tratar de deixar posting lists em memoria com base nas pesquisas feitas
 
-    def __init__(self, inverted_index:Dict[str, List[Posting]]) -> None:
+    def __init__(self, inverted_index:Dict[str, PostingList], posting_type:PostingType) -> None:
         self.inverted_index = inverted_index if inverted_index != None else dict()
-    
+        self.posting_list_class = PostingListFactory(posting_type)
+
+
+    def clear(self):
+        self.inverted_index.clear()
+
 
     def add_token(self, token:str, doc_id:int, position:int) -> None:
         """
@@ -23,30 +30,9 @@ class InvertedIndex:
         """
         posting_list = self.inverted_index.get(token)
         if posting_list == None:
-            posting_list = PostingList()
-            posting = Posting(doc_id, [position])
-            posting_list.add(posting)
+            posting_list = self.posting_list_class()
             self.inverted_index[token] = posting_list
-        else:
-            posting_list.add(Posting(doc_id, [position]))            
-    
-
-    def _update_posting_list(self, token:str, doc_id:int, position:int) -> None:
-        """
-        :description: private function that updates or created a Posting inside the respective token Posting list
-
-        :param token: token to be added
-        :param doc_id: document id
-        :param position: position of the token in the respective document id
-        :return: None
-        """
-        for posting in self.inverted_index[token]:
-            if posting.doc_id == doc_id:
-                posting.add(position)
-                return
-        posting = Posting(doc_id)
-        posting.add(position)
-        self.inverted_index[token].append(posting)
+        posting_list.add(doc_id, position)
 
     
     def sorted_terms(self):
@@ -55,7 +41,7 @@ class InvertedIndex:
 
         :return: list of sorted terms based on the string comparison after normalizing to lower case letters
         """
-        return sorted(list(self.inverted_index.keys()), key=lambda term: term.lower())
+        return sorted(list(self.inverted_index.keys()))
 
 
     def search(self, terms:List[str]) -> List[int]:
@@ -65,21 +51,17 @@ class InvertedIndex:
     def save(self, output_file:str) -> None:
         with open(output_file, 'w') as file:
             for term in self.sorted_terms():
-                lines = f"{term} {' '.join([str(posting) for posting in self.inverted_index[term]])}\n"
-                file.write(lines)
+                line = f'{ term }{ self.delimiter }{ self.inverted_index[term] }\n'
+                file.write(line)
 
 
-    def object_to_save(self) -> object:
-        pass
-
+    def load(self, line:str) -> Tuple[str, PostingList]:
+        parts = line.split(self.delimiter, 1)
+        return parts[0], self.posting_list_class.load(parts[1])
+        
 
     def __repr__(self):
         repr = ''
         for term, posting_list in self.inverted_index.items():
-            repr += f'{term}: {",".join([posting for posting in posting_list]) if posting_list != None else "None"}\n'
+            repr += f'{term}: {posting_list if posting_list != None else "None"}\n'
         return repr
-
-    
-    def __str__(self):
-        return self.__repr__()
-
