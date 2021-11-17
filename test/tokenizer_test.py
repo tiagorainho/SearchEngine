@@ -11,7 +11,7 @@ def test_instantiation():
 
 def test_tokenize_no_min_len():
     tokenizer = Tokenizer(0)
-    tokens = tokenizer.tokenize("Hello, I am Vasco Sousa from Portugal")
+    tokens = tokenizer.tokenize("Hello, I am Vasco Sousa from Portugal...")
 
     assert len(tokens) == 7
     assert "hello" in tokens

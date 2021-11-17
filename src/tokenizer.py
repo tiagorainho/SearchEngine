@@ -11,7 +11,6 @@ class Tokenizer:
     stop_words: Set[str] or None
     transforms: Dict[str, str]
 
-
     def __init__(self,
                  min_token_length: int = None,
                  stop_words_path: str = None,
@@ -35,7 +34,6 @@ class Tokenizer:
         else:
             self.stop_words = None
 
-
     def tokenize(self, text: str):
         """
         tokenize reads a text and tokenizes it using provided settings 
@@ -44,9 +42,9 @@ class Tokenizer:
         :return: None
         """
 
-        no_ponctuation = filter(lambda w: w not in punctuation, text)
+        no_ponctuation = map(lambda w: " " if w in punctuation else w, text)
         lowered = "".join(no_ponctuation).lower()
-        tokens = list(re.split(' |,|\t|\n',lowered))
+        tokens = list(re.findall(r'\S+|\t|\n', lowered))
 
         if self.min_token_length != None:
             tokens = filter(lambda n: len(n) >= self.min_token_length, tokens)
@@ -56,12 +54,15 @@ class Tokenizer:
 
         if self.snow_stemmer != None:
             aux = []
+
             for token in tokens:
                 transform = self.transforms.get(token)
+
                 if transform == None:
                     transform = self.snow_stemmer.stem(token)
                     self.transforms[token] = transform
                 aux.append(transform)
+
             tokens = aux
 
         return list(tokens)

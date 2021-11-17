@@ -41,8 +41,9 @@ class Parser:
             data = csv.DictReader(file, delimiter=delimiter)
 
             for row in data:
-                values = [row[k] for k in row.keys(
-                ) if k in self.columns]
-                parsed[row[self.doc_id_column]] = ",".join(values)
+                values = " ".join([row[k]
+                                  for k in row.keys() if k in self.columns])
+
+                parsed[row[self.doc_id_column]] = values
 
         return parsed

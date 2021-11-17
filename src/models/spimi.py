@@ -60,6 +60,7 @@ class Spimi():
                 f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
             self.inverted_index.clear()
             self.start = time.time()
+
         for position, token in enumerate(tokens):
             if(self._inverted_index_size >= self.MAX_BLOCK_SIZE):
                 self._write_block_to_disk(

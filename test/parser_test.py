@@ -9,4 +9,4 @@ def test_parse():
     assert text != ""
     assert "RSH1OZ87OYK92" in text
     assert "R1JEEW4C6R89BA" in text
-    assert "A slight improvement from last year." in text
+    assert "A slight improvement from last year." in text["RSH1OZ87OYK92"]

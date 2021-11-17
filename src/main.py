@@ -83,31 +83,31 @@ class Main:
             print("Index construction")
             start = time.time()
             index = indexer.construct_index(OUTPUT_INDEX)
+            indexer.clear_blocks()
             print(f"Time to create the main index: {time.time()-start}")
+
             return index
 
     def search(self):
+        tokenizer = Tokenizer(self.args.min_token_length,
+                              self.args.stop_words, self.args.language)
         index = InvertedIndex(None, PostingType.FREQUENCY,
                               self.args.search_index)
 
-        t1 = time.perf_counter()
-        matches = index.light_search(self.args.search_terms)
-        t2 = time.perf_counter()
-        print(matches)
+        tokens = tokenizer.tokenize(" ".join(self.args.search_terms))
 
-        print(f"{(t2-t1)* 100}ms")
+        t1 = time.perf_counter()
+        matches_light = index.light_search(tokens)
+        t2 = time.perf_counter()
+
+        print(f"{matches_light}")
+        print(f"Search in {(t2-t1)* 100}ms")
 
     def main(self):
         if self.args.documents:
             self.index()
         elif self.args.search_index and self.args.search_terms:
             self.search()
-
-
-def remove_blocks(block_dir: str):
-    files = glob.glob(f'{block_dir}/*.block')
-    for f in files:
-        os.remove(f)
 
 
 if __name__ == '__main__':
