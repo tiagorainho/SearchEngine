@@ -1,5 +1,5 @@
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Set, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
 
@@ -13,6 +13,24 @@ class InvertedIndex:
     def __init__(self, inverted_index:Dict[str, PostingList], posting_type:PostingType) -> None:
         self.inverted_index = inverted_index if inverted_index != None else dict()
         self.posting_list_class = PostingListFactory(posting_type)
+
+
+    def light_search(self, terms:List[str]) -> List[int]:
+        retrieved_documents:Set[int] = set()
+        for term in terms:
+            posting_list: PostingList = self.inverted_index.get(term)
+            if term in posting_list:
+                
+                if posting_list == False:
+                    # the postings are in disk, we must retrieve them
+                    pass
+                else:
+                    # get documents in memory that have the term
+                    documents = posting_list.get_documents()
+                    for document in documents:
+                        retrieved_documents.add(document)
+
+        return list(retrieved_documents)
 
 
     def clear(self):
@@ -42,10 +60,6 @@ class InvertedIndex:
         :return: list of sorted terms based on the string comparison after normalizing to lower case letters
         """
         return sorted(list(self.inverted_index.keys()))
-
-
-    def search(self, terms:List[str]) -> List[int]:
-        pass
 
 
     def save(self, output_file:str) -> None:

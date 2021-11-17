@@ -12,6 +12,9 @@ class PostingList:
     def add(self, doc_id:int, position:int):
         pass
 
+    def get_documents(self):
+        pass
+
     @staticmethod
     def load(line):
         pass
@@ -31,6 +34,9 @@ class BooleanPostingList(PostingList):
 
     def add(self, doc_id:int, position:int=None):
         self.posting_list.add(doc_id)
+    
+    def get_documents(self):
+        return list(self.posting_list)
 
     @staticmethod
     def load(line):
@@ -69,6 +75,8 @@ class PositionalPostingList(PostingList):
         else:
             saved_posting.append(position)
 
+    def get_documents(self):
+        return list(self.posting_list.keys())
 
     @staticmethod
     def load(line:str):
@@ -112,6 +120,8 @@ class FrequencyPostingList(PostingList):
         if freq == None: self.posting_list[doc_id] = 1
         else: self.posting_list[doc_id] = freq + 1
     
+    def get_documents(self):
+        return list(self.posting_list.keys())
 
     @staticmethod
     def merge(posting_lists:List[FrequencyPostingList]) -> FrequencyPostingList:

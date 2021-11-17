@@ -182,12 +182,12 @@ class Spimi():
         :return: dictionary with all the terms inserted in the final index
         """
         min_term_generator = self.min_k_merge_generator(input_files)
-        index:Dict[str, None] = dict()
+        index:Dict[str, False] = dict()
         with open(os.path.join(os.path.dirname(__file__), output_file), 'w') as output_file:
             # get mininum terms and their respective posting list
             for term, posting_list in min_term_generator:
                 output_file.write(f"{term} {posting_list}\n")
-                index[term] = None
+                index[term] = False
         return InvertedIndex(index, self.posting_type)
 
 
