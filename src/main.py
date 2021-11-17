@@ -24,6 +24,7 @@ class Main:
         arg_parser.add_argument(
             "--min-token-length",
             default=0,
+            type=int,
             dest="min_token_length",
             help="Minimium number of chars that a token must have to be indexed",
             required=False

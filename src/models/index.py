@@ -34,7 +34,7 @@ class InvertedIndex:
             line = self.file.readline()
             line_term = line.split(self.delimiter)[0]
 
-            while term != line_term or max - min == 0:
+            while term != line_term and max - min > 1:
                 middle = int((max + min) / 2)
                 self.file.seek(middle)
                 self.file.readline()
@@ -45,8 +45,9 @@ class InvertedIndex:
                     max = middle
                 elif term > line_term:
                     min = middle
-
-            matches.append(line)
+                    
+            if term == line_term:
+                matches.append(line)
 
         return matches
 
