@@ -59,30 +59,30 @@ class Main:
         self.args = arg_parser.parse_args()
 
     def index(self):
+
         for document in self.args.documents:
-            print("Parsing files")
-            parser = Parser(document, 'review_id', set(
-                ['review_headline', 'review_body']))
+            parser = Parser(document, 'review_id', [
+                            'review_headline', 'review_body'])
+
             tokenizer = Tokenizer(
                 self.args.min_token_length, self.args.stop_words, self.args.language)
-            parsed_text = parser.parse('\t')
+
             indexer = Spimi(max_ram_usage=95, max_block_size=50000,
                             auxiliary_dir=BLOCK_DIR, posting_type=PostingType.BOOLEAN)
 
-            print("Creating documents and indexing")
-            start = time.time()
+            parser_generator = parser.parse('\t')
 
-            for i, doc_id in enumerate(sorted([key for key in parsed_text.keys()])):
-                tokens = tokenizer.tokenize(parsed_text[doc_id])
+            start = time.perf_counter()
+            print("Start file indexing")
+
+            for i, (_, parsed_text) in enumerate(parser_generator):
+                tokens = tokenizer.tokenize(parsed_text)
                 indexer.add_document(doc_id=i, tokens=tokens)
 
-            print(f"Time to create blocks: {time.time()-start}")
-
-            print("Index construction")
-            start = time.time()
             index = indexer.construct_index(OUTPUT_INDEX)
             indexer.clear_blocks()
-            print(f"Time to create the main index: {time.time()-start}")
+            end = time.perf_counter()
+            print(f"End file indexing {round((end-start), 3)} seconds")
 
             return index
 

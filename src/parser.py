@@ -45,6 +45,4 @@ class Parser:
                 values = " ".join([row[k]
                                   for k in row.keys() if k in self.columns and row[k] != None])
 
-                parsed[row[self.doc_id_column]] = values
-
-        return parsed
+                yield (row[self.doc_id_column], values)
