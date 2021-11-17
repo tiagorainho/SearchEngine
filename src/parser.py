@@ -2,6 +2,7 @@ from typing import Dict, Set
 from pathlib import Path
 import csv
 import sys
+import gzip
 
 
 class Parser:
@@ -37,12 +38,12 @@ class Parser:
         """
         parsed = dict()
 
-        with open(self.file_path, encoding='utf-8') as file:
+        with gzip.open(self.file_path, "rt", encoding='utf-8') as file:
             data = csv.DictReader(file, delimiter=delimiter)
 
             for row in data:
                 values = " ".join([row[k]
-                                  for k in row.keys() if k in self.columns])
+                                  for k in row.keys() if k in self.columns and row[k] != None])
 
                 parsed[row[self.doc_id_column]] = values
 

@@ -40,7 +40,7 @@ class Main:
             "--documents",
             nargs="*",
             dest="documents",
-            help="List of paths to the documents that are going to be indexed",
+            help="List of paths to the .gz documents that are going to be indexed",
             required=False
         )
         arg_parser.add_argument(
@@ -60,6 +60,7 @@ class Main:
 
     def index(self):
         for document in self.args.documents:
+            print("Parsing files")
             parser = Parser(document, 'review_id', set(
                 ['review_headline', 'review_body']))
             tokenizer = Tokenizer(
