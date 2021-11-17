@@ -1,19 +1,153 @@
-from typing import Dict
-from models.posting import Posting
+from __future__ import annotations
+from typing import Dict, List, Set
+from models.posting import PostingType
 
 
-class PostingList():
-    posting_list: Dict[int, Posting]
+class PostingList:
+    posting_type: PostingType
+
+    def __init__(self, posting_type:PostingType):
+        self.posting_type = posting_type
+
+    def add(self, doc_id:int, position:int):
+        pass
+
+    @staticmethod
+    def load(line):
+        pass
+
+    @staticmethod
+    def merge(posting_lists:List[PostingList]) -> PostingList:
+        pass
+
+
+class BooleanPostingList(PostingList):
+
+    posting_list: Set[int]
 
     def __init__(self):
+        super().__init__(PostingType.BOOLEAN)
+        self.posting_list = set()
+
+    def add(self, doc_id:int, position:int=None):
+        self.posting_list.add(doc_id)
+
+    @staticmethod
+    def load(line):
+        new_posting_list = BooleanPostingList()
+        for doc_id in line.split(' '):
+            new_posting_list.posting_list.add(doc_id)
+        return new_posting_list
+
+    @staticmethod
+    def merge(posting_lists:List[BooleanPostingList]) -> BooleanPostingList:
+        new_posting_list:BooleanPostingList = max(posting_lists, key=lambda posting_list: len(posting_list.posting_list))
+        posting_lists.remove(new_posting_list)
+        for boolean_posting_list in posting_lists:
+            new_posting_list.posting_list = new_posting_list.posting_list.union(boolean_posting_list.posting_list)
+        return new_posting_list
+
+    def __repr__(self):
+        return ' '.join([str(posting) for posting in self.posting_list])
+
+
+
+
+class PositionalPostingList(PostingList):
+
+    posting_list: Dict[int, List[int]]
+
+    def __init__(self):
+        super().__init__(PostingType.POSITIONAL)
         self.posting_list = dict()
 
-    def add(self, posting:Posting):
-        saved_posting = self.posting_list.get(posting.doc_id)
+
+    def add(self, doc_id:int, position:int):
+        saved_posting = self.posting_list.get(doc_id)
         if saved_posting == None:
-            self.posting_list[posting.doc_id] = posting
+            self.posting_list[doc_id] = [position]
         else:
-            saved_posting.add_multiple(posting.positions)
+            saved_posting.append(position)
+
+
+    @staticmethod
+    def load(line:str):
+        line = line.replace('{', '').replace('}', '')
+        new_posting_list = PositionalPostingList()
+        for posting_list_line in line.split(' '):
+            parts = posting_list_line.split(':')
+            doc_id = parts[0]
+            for positions in parts[1:]:
+                for position in positions.split(','):
+                    new_posting_list.add(doc_id, int(position))
+        return new_posting_list
+    
+
+    @staticmethod
+    def merge(posting_lists:List[PositionalPostingList]) -> PositionalPostingList:
+        new_posting_list:PositionalPostingList = max(posting_lists, key=lambda posting_list: len(posting_list.posting_list))
+        posting_lists.remove(new_posting_list)
+        for posting_list in posting_lists:
+            for doc_id, positions in posting_list.posting_list.items():
+                for position in positions:
+                    new_posting_list.add(doc_id, position)
+        return new_posting_list
+    
+
+    def __repr__(self):
+        return ' '.join([f"{{{str(doc_id)}:{','.join([str(position) for position in postings_list])}}}" for doc_id, postings_list in self.posting_list.items()])
+
+
+
+class FrequencyPostingList(PostingList):
+
+    posting_list: Dict[int, int]
+
+    def __init__(self):
+        super().__init__(PostingType.FREQUENCY)
+        self.posting_list = dict()
+
+    def add(self, doc_id:int, position:int=None):
+        freq = self.posting_list.get(doc_id)
+        if freq == None: self.posting_list[doc_id] = 1
+        else: self.posting_list[doc_id] = freq + 1
+    
+
+    @staticmethod
+    def merge(posting_lists:List[FrequencyPostingList]) -> FrequencyPostingList:
+        new_posting_list:FrequencyPostingList = max(posting_lists, key=lambda posting_list: len(posting_list.posting_list))
+        posting_lists.remove(new_posting_list)
+        for posting_list in posting_lists:
+            for doc_id, freq in posting_list.posting_list.items():
+                freq = new_posting_list.posting_list.get(doc_id)
+                if freq == None:
+                    new_posting_list.posting_list[doc_id] = 1
+                else:
+                    new_posting_list.posting_list[doc_id] = freq + freq
+        return new_posting_list
+
+
+    @staticmethod
+    def load(line):
+        new_posting_list = FrequencyPostingList()
+        for posting in line.split(' '):
+            parts = posting.split('-')
+            new_posting_list.posting_list[parts[0]] = parts[1]
+        return new_posting_list
+        
     
     def __repr__(self):
-        return ' '.join([str(posting) for posting in self.posting_list.values()])
+        return ' '.join([f'{doc_id}-{freq}' for doc_id, freq in self.posting_list.items()])
+
+
+
+
+
+posting_list_types = {
+    PostingType.BOOLEAN: BooleanPostingList,
+    PostingType.FREQUENCY: FrequencyPostingList,
+    PostingType.POSITIONAL: PositionalPostingList
+}
+
+def PostingListFactory(posting_type:PostingType) -> PostingList:
+    return posting_list_types[posting_type]
