@@ -50,11 +50,13 @@ python3 src/main.py --search-index cache/index/index_file.index --posting-list-t
 
 ## Content
 
-The following classes and their hierarchical structure are the following:
+The following classes, their hierarchical structure and relevant features are the following:
 - [Parser](#parser)
 - [Tokenizer Index](#tokenizer)
 - [Indexer](#indexer)
     - [SPIMI (Single Pass In Memory Indexing)](#spimi-single-pass-in-memory-indexing)
+        - [RAM Access Improvements](#ram-access-improvements)
+        - [Final Index Construction](#final-index-construction)
 - [Inverted Index](#inverted-index)
     - [Boolean Posting List](#boolean-posting-list)
     - [Frequency Posting List](#frequency-posting-list)
