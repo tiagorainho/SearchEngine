@@ -104,7 +104,7 @@ class Main:
             for i, (_, parsed_text) in enumerate(parser_generator):
                 tokens = tokenizer.tokenize(parsed_text)
                 indexer.add_document(doc_id=i, tokens=tokens)
-
+                
             index = indexer.construct_index(OUTPUT_INDEX)
             end = time.perf_counter()
             print(

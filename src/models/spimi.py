@@ -4,12 +4,11 @@ from models.index import InvertedIndex
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
 from pathlib import Path
-from threading import Thread
+import threading
 import psutil
 import heapq
 import os
 import glob
-import time
 
 
 class Spimi():
@@ -23,7 +22,8 @@ class Spimi():
     posting_list_class: PostingList
     posting_type: PostingType
     ram_usage: float
-
+    can_update_ram: threading.Event
+    document_done: threading.Event
 
     def __init__(self, max_ram_usage: int = 85, max_block_size: int = 10000, auxiliary_dir: str = 'cache/blocks', posting_type: PostingType = PostingType.FREQUENCY) -> None:
         """
@@ -39,10 +39,41 @@ class Spimi():
         self.inverted_index = InvertedIndex(dict(), posting_type)
         self.posting_type = posting_type
         self.posting_list_class = PostingListFactory(posting_type)
-        self.update_ram = False
-        self.ram_usage = psutil.virtual_memory().percent
-        thread = Thread(target=self.update_ram, daemon=True)
+        self.ram_usage = self.get_ram_usage()
+        self.can_update_ram = threading.Event()
+        self.document_done = threading.Event()
+        self.document_done.set()
+        self.can_update_ram.set()
+        thread = threading.Thread(target=self.update_ram, daemon=True)
         thread.start()
+         
+
+    def get_ram_usage(self):
+        return psutil.virtual_memory().percent
+
+    def update_ram(self):
+        while True:
+            self.can_update_ram.wait()
+            self.document_done.clear()
+            self.ram_usage = self.get_ram_usage()
+            self.document_done.set()
+
+    def add_document(self, doc_id: int, tokens: List[str]) -> None:
+        """
+        Add a new document to be indexed. The indexing takes into account memory usage and created index size
+
+        :param doc_id: document ID
+        :param tokens: list of tokens from the document
+        :return: None
+        """
+        self.can_update_ram.set()
+        for position, token in enumerate(tokens):
+            if(self.ram_usage >= self.MAX_RAM_USAGE or self._inverted_index_size >= self.MAX_BLOCK_SIZE):
+                self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
+                self.inverted_index.clear()
+            self.inverted_index.add_token(token, doc_id, position)
+        self.can_update_ram.clear()
+        self.document_done.wait()
 
     @property
     def _inverted_index_size(self) -> int:
@@ -52,29 +83,6 @@ class Spimi():
         :return: integer
         """
         return len(self.inverted_index.inverted_index)
-
-    def update_ram(self):
-        while True:
-            if self.update_ram:
-                self.ram_usage = psutil.virtual_memory().percent
-            else:
-                time.sleep(0.001)
-
-    def add_document(self, doc_id: int, tokens: List[str]) -> None:
-        self.update_ram = True
-        """
-        Add a new document to be indexed. The indexing takes into account memory usage and created index size
-
-        :param doc_id: document ID
-        :param tokens: list of tokens from the document
-        :return: None
-        """
-        for position, token in enumerate(tokens):
-            if(self.ram_usage >= self.MAX_RAM_USAGE or self._inverted_index_size >= self.MAX_BLOCK_SIZE):
-                self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
-                self.inverted_index.clear()
-            self.inverted_index.add_token(token, doc_id, position)
-        self.update_ram = False
 
     def _write_block_to_disk(self, output_path: str) -> None:
         """
