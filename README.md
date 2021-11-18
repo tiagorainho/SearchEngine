@@ -128,12 +128,18 @@ A ``light_search()`` method was also implemented to add searchable capabilities,
 
 ## Results
 
-All the results were computed with a MacBookPro M1 and with the following constant inputs:
+All results were performed using a MacBookPro M1 with the following specs:
+- Apple M1, 8 core 3.2 GHz CPU
+- 16 GB Ram
+- 256 GB SSD
+
+
+And with the following program constant inputs:
 
 | Variable                | Value               |
 | :---------------------- | ------------------- |
 | stop words              | stop_words.txt      |
-| min token               | 4                   |
+| min token               | 3                   |
 | language                | english             |
 | max block size          | 50 000              |
 | max ram                 | 95                  |
@@ -143,29 +149,36 @@ All the results were computed with a MacBookPro M1 and with the following consta
 
 Set of document ids.
 
-| Dataset                                               | Original File Size | Index File Size | Index Build Time |
-| :---------------------------------------------------- | ------------------ | --------------- | ---------------- |
-| amazon_reviews_us_Digital_Video_Games_v1_00.tsv.gz    | 26.2 MB            | 25.8 MB         | 13.598 seconds   |
-| amazon_reviews_us_Digital_Music_Purchase_v1_00.tsv.gz | 241.8 MB           | 252.5 MB        | 120.805 seconds  |
-| amazon_reviews_us_Music_v1_00.tsv.gz                  | 1.4GB              | 1.75 GB         | 1096.75 seconds  |
-| amazon_reviews_us_Books_v1_00.tsv.gz                  | 2.6 GB             | 2.84 GB         | 2161.79 seconds  |
+| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks |
+| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- |
+| Digital_Video_Games_v1_00    | 26.2 MB            | 25.80 MB        | 13.598 sec       | 2                |
+| Digital_Music_Purchase_v1_00 | 241.8 MB           | 252.50 MB       | 2.013 min        | 20               |
+| Music_v1_00                  | 1.4 GB             | 1.75 GB         | 18.279 min       | 164              |
+| Books_v1_00                  | 2.6 GB             | 2.84 GB         | 36.028 min       | 239              |
 
 
 ### Frequency Posting List
 
 Data structure where the document id connects to an integer that represents the number of times that term has occured inside the given document.
 
-| Dataset                                               | Original File Size | Index File Size | Index Build Time |
-| :---------------------------------------------------- | ------------------ | --------------- | ---------------- |
-| amazon_reviews_us_Digital_Video_Games_v1_00.tsv.gz    | 26.2 MB            | 32,7 MB         | 14.647 seconds   |
-| amazon_reviews_us_Digital_Music_Purchase_v1_00.tsv.gz | 241.8 MB           | 318,8 MB        | 2.020 minutes    |
-| amazon_reviews_us_Music_v1_00.tsv.gz                  | 1.4 GB             | 2,18 GB         | 13.742 minutes   |
-| amazon_reviews_us_Books_v1_00.tsv.gz                  | 2.6 GB             | 2.84 GB         | 24.310 minutes   |
+| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks |
+| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- |
+| Digital_Video_Games_v1_00    | 26.2 MB            | 32.70 MB        | 14.647 sec       | 2                |
+| Digital_Music_Purchase_v1_00 | 241.8 MB           | 318.80 MB       | 2.020 min        | 20               |
+| Music_v1_00                  | 1.4 GB             | 2.18 GB         | 13.742 min       | 164              |
+| Books_v1_00                  | 2.6 GB             | 2.84 GB         | 24.310 min       | 239              |
 
 
 ### Positional Posting List
 
 Data Structure where the document id links to a list of positions where the term has occured inside the document.
+
+| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks |
+| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- |
+| Digital_Video_Games_v1_00    | 26.2 MB            | 48.80 MB        | 20.878 sec       | 2                |
+| Digital_Music_Purchase_v1_00 | 241.8 MB           | 436.30 MB       | 3.432 min        | 20               |
+| Music_v1_00                  | 1.4 GB             | 3.080 GB        | 26.953 min       | 164              |
+| Books_v1_00                  | 2.6 GB             | 5.020 GB        | 46.614 min       | 239              |
 
 
 ### Light Search
