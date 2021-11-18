@@ -7,7 +7,6 @@ from pathlib import Path
 import psutil
 import heapq
 import os
-import time
 import glob
 
 
@@ -37,8 +36,6 @@ class Spimi():
         self.posting_type = posting_type
         self.posting_list_class = PostingListFactory(posting_type)
 
-        self.start = time.time()
-
     @property
     def _inverted_index_size(self) -> int:
         """
@@ -60,14 +57,12 @@ class Spimi():
             self._write_block_to_disk(
                 f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
             self.inverted_index.clear()
-            self.start = time.time()
 
         for position, token in enumerate(tokens):
             if(self._inverted_index_size >= self.MAX_BLOCK_SIZE):
                 self._write_block_to_disk(
                     f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
                 self.inverted_index.clear()
-                self.start = time.time()
             self.inverted_index.add_token(token, doc_id, position)
 
     def _write_block_to_disk(self, output_path: str) -> None:

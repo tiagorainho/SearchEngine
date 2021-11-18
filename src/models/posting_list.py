@@ -6,21 +6,21 @@ from models.posting import PostingType
 class PostingList:
     posting_type: PostingType
 
-    def __init__(self, posting_type:PostingType):
+    def __init__(self, posting_type:PostingType)->None:
         self.posting_type = posting_type
 
-    def add(self, doc_id:int, position:int):
+    def add(self, doc_id:int, position:int)->None:
         pass
 
-    def get_documents(self):
-        pass
-
-    @staticmethod
-    def load(line):
+    def get_documents(self)->List[int]:
         pass
 
     @staticmethod
-    def merge(posting_lists:List[PostingList]) -> PostingList:
+    def load(line:str)->PostingList:
+        pass
+
+    @staticmethod
+    def merge(posting_lists:List[PostingList])->PostingList:
         pass
 
 
@@ -35,11 +35,11 @@ class BooleanPostingList(PostingList):
     def add(self, doc_id:int, position:int=None):
         self.posting_list.add(doc_id)
     
-    def get_documents(self):
+    def get_documents(self) -> List[int]:
         return list(self.posting_list)
 
     @staticmethod
-    def load(line):
+    def load(line) -> BooleanPostingList:
         new_posting_list = BooleanPostingList()
         for doc_id in line.split(' '):
             new_posting_list.posting_list.add(doc_id)
@@ -67,7 +67,6 @@ class PositionalPostingList(PostingList):
         super().__init__(PostingType.POSITIONAL)
         self.posting_list = dict()
 
-
     def add(self, doc_id:int, position:int):
         saved_posting = self.posting_list.get(doc_id)
         if saved_posting == None:
@@ -75,11 +74,11 @@ class PositionalPostingList(PostingList):
         else:
             saved_posting.append(position)
 
-    def get_documents(self):
+    def get_documents(self) -> List[int]:
         return list(self.posting_list.keys())
 
     @staticmethod
-    def load(line:str):
+    def load(line:str) -> PositionalPostingList:
         line = line.replace('{', '').replace('}', '')
         new_posting_list = PositionalPostingList()
         for posting_list_line in line.split(' '):
@@ -89,7 +88,6 @@ class PositionalPostingList(PostingList):
                 for position in positions.split(','):
                     new_posting_list.add(doc_id, int(position))
         return new_posting_list
-    
 
     @staticmethod
     def merge(posting_lists:List[PositionalPostingList]) -> PositionalPostingList:
@@ -120,7 +118,7 @@ class FrequencyPostingList(PostingList):
         if freq == None: self.posting_list[doc_id] = 1
         else: self.posting_list[doc_id] = freq + 1
     
-    def get_documents(self):
+    def get_documents(self) -> List[int]:
         return list(self.posting_list.keys())
 
     @staticmethod
@@ -136,20 +134,16 @@ class FrequencyPostingList(PostingList):
                     new_posting_list.posting_list[doc_id] = freq + freq
         return new_posting_list
 
-
     @staticmethod
-    def load(line):
+    def load(line) -> FrequencyPostingList:
         new_posting_list = FrequencyPostingList()
         for posting in line.split(' '):
             parts = posting.split('-')
             new_posting_list.posting_list[parts[0]] = parts[1]
         return new_posting_list
-        
     
     def __repr__(self):
         return ' '.join([f'{doc_id}-{freq}' for doc_id, freq in self.posting_list.items()])
-
-
 
 
 

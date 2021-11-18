@@ -36,7 +36,6 @@ class Parser:
         :param delimiter: csv delimiter char
         :return: Dictionary containing doc id as key and text as value
         """
-        parsed = dict()
 
         with gzip.open(self.file_path, "rt", encoding='utf-8') as file:
             data = csv.DictReader(file, delimiter=delimiter)
