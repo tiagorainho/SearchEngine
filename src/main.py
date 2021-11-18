@@ -68,7 +68,7 @@ class Main:
                 self.args.min_token_length, self.args.stop_words, self.args.language)
 
             indexer = Spimi(max_ram_usage=95, max_block_size=50000,
-                            auxiliary_dir=BLOCK_DIR, posting_type=PostingType.BOOLEAN)
+                            auxiliary_dir=BLOCK_DIR, posting_type=PostingType.FREQUENCY)
 
             parser_generator = parser.parse('\t')
 
