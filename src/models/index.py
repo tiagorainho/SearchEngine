@@ -1,11 +1,7 @@
 
-from io import FileIO
-import io
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
-from pathlib import Path
-from time import sleep
 
 
 class InvertedIndex:
@@ -30,9 +26,11 @@ class InvertedIndex:
             file_size = file.tell()
 
             for term in terms:
+                file.seek(0)
                 min = 0
                 max = file_size
-                line_term = ''
+                line = file.readline()
+                line_term = line.split(self.delimiter)[0]
 
                 while term != line_term and max - min > 1:
                     middle = int((max + min) / 2)
@@ -47,7 +45,7 @@ class InvertedIndex:
                         min = middle
 
                 if term == line_term:
-                    matches.append(line)
+                    matches.extend(self.load(line)[1].get_documents())
 
         return matches
 

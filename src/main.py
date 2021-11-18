@@ -50,12 +50,37 @@ class Main:
             required=False
         )
         arg_parser.add_argument(
+            "--posting-list-type",
+            dest="posting_list_type",
+            type=PostingType,
+            default=PostingType.FREQUENCY,
+            help="Type of posting list to be used inside the indexer, can be either 'boolean', 'frequency' or 'positional'",
+            required=False
+        )
+        arg_parser.add_argument(
+            "--max-block-size",
+            dest="max_block_size",
+            type=int,
+            default=50000,
+            help="Maximum number of terms inside each temporary block",
+            required=False
+        )
+        arg_parser.add_argument(
+            "--max-ram",
+            dest="max_ram",
+            type=int,
+            default=95,
+            help="Maximum amount of ram usage permited before writting temporary files",
+            required=False
+        )
+        arg_parser.add_argument(
             "--search-terms",
             nargs="*",
             dest="search_terms",
             help="Term to search for",
             required=False
         )
+
         self.args = arg_parser.parse_args()
 
     def index(self):
@@ -67,29 +92,30 @@ class Main:
             tokenizer = Tokenizer(
                 self.args.min_token_length, self.args.stop_words, self.args.language)
 
-            indexer = Spimi(max_ram_usage=95, max_block_size=50000,
-                            auxiliary_dir=BLOCK_DIR, posting_type=PostingType.BOOLEAN)
+            indexer = Spimi(max_ram_usage=self.args.max_ram, max_block_size=self.args.max_block_size,
+                            auxiliary_dir=BLOCK_DIR, posting_type=self.args.posting_list_type)
 
             parser_generator = parser.parse('\t')
 
             start = time.perf_counter()
-            print("Start file indexing")
+            print(f"Start {str(self.args.posting_list_type).lower().replace('postingtype.','')} indexing...")
 
             for i, (_, parsed_text) in enumerate(parser_generator):
                 tokens = tokenizer.tokenize(parsed_text)
                 indexer.add_document(doc_id=i, tokens=tokens)
 
             index = indexer.construct_index(OUTPUT_INDEX)
-            indexer.clear_blocks()
             end = time.perf_counter()
-            print(f"End file indexing {round((end-start), 3)} seconds")
+            print(f"End file indexing {round((end-start), 3)} seconds with {indexer.block_number} temporary file{'s' if indexer.block_number != 1 else ''}")
+
+            indexer.clear_blocks()
 
             return index
 
     def search(self):
         tokenizer = Tokenizer(self.args.min_token_length,
                               self.args.stop_words, self.args.language)
-        index = InvertedIndex(None, PostingType.FREQUENCY,
+        index = InvertedIndex(None, self.args.posting_list_type,
                               self.args.search_index)
 
         tokens = tokenizer.tokenize(" ".join(self.args.search_terms))
@@ -97,9 +123,8 @@ class Main:
         t1 = time.perf_counter()
         matches_light = index.light_search(tokens)
         t2 = time.perf_counter()
-
-        print(f"{matches_light}")
         print(f"Search in {(t2-t1)* 100}ms")
+        print(f"{matches_light}")
 
     def main(self):
         if self.args.documents:
