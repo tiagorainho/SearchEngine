@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 Create the index
 ```
-python3 src/main.py --stop-words stop_words.txt --min-token-length 3 --language english --max-block-size 50000 --max-ram 95 --posting-list-type positional --documents datasets/example.csv
+python3 src/main.py --stop-words stop_words.txt --min-token-length 4 --language english --max-block-size 50000 --max-ram 95 --posting-list-type positional --documents datasets/example.csv
 ```
 Search in the index
 ```
@@ -72,6 +72,11 @@ This class can process both *csv* and *tsv.gz* files.
 
 ### Tokenizer
 
+Is responsible to convert a text to a list of tokens, these tokens are also:
+- removed based on the token length
+- removed based on the stop words file
+- edited by the stemmer which tries to reduce the words to more common ones
+
 In order to improve stemmer performance, every token that goes though the stemmer is saved in a dictionary for faster look up in later transformations.
 
 ### Indexer
@@ -85,6 +90,7 @@ In the SPIMI constructor, in order to know which type of posting list to use, th
 The ``construct_index()`` is the most complex method, this creates the final index which are all the merged blocks that will be written in disk. In order to facilitate the job for developers the ``min_k_merge_generator()`` method was implemented, this method returns a generator that abstracts all the accessed files by returning the least valuable term of all the blocks and the already merged posting list, this method proved very efficient at abstracting this complex step.
 Inside the lastly mentioned method, we can find the list of generators for each file, these generators provide a buffer of lines based on the *maximum block size* and the *number of temporary blocks*.
 The least valuable term of each block is added in a *priority queue* and if there is more than one with the same lower value, then those posting lists are merged and yielded. After that we just have to repopulate both the lines buffer and heap, and then it can restart the process until there is no more lines in every generator.
+Also, in this component, when the ``add_document()`` method is being run, there is a need to calculate the RAM of the computer to ensure it does not pass the threshold given by the user. This could be done sequentialy in the code like: ``psutil.virtual_memory().percent >= self.MAX_RAM_USAGE`` however this will block the pipeline with useless calls. The better approach is to create a thread that is constantly updating a variable that contains the ram usage by the computer and then in the code we just have to compare that variable to the ``self.MAX_RAM_USAGE`` this is much better because we don't need to wait for the ``virtual_memory()`` to finish because in the thread it is already doing as much as it can to compute this result. In the end we end up with the same amount of precision as before but with much fewer interlap between the indexing process and the funcion maintaing the cap on the RAM.
 
 ### Inverted Index
 
@@ -118,7 +124,7 @@ indexer = Spimi(max_ram_usage=95, max_block_size=50000, auxiliary_dir=BLOCK_DIR,
 ```
 After only this simple steps, we have a functional index with a completly different PostingList implementation.
 
-A ``light_search()`` method was also implemented to add searchable capabilities, it is an algorithm that if the searched term is not already inside the Inverted Index, then an access to the main index file is performed, the search in this file is done by RAF (Random Access File) in order to do a binary search since the terms are already sorted, this results in $ O(log_{2}{n}) $ complexity. In order to make the RAF work, the ``seek()`` was used to point to a particular byte, then as we can not be assured that we are not reading already in the middle of the line, we read the next line to get a clean line that will be read after. This is fine because the first line would be tested at the beginning of the algorithm to ensure it is not the searched term.
+A ``light_search()`` method was also implemented to add searchable capabilities, it is an algorithm that if the searched term is not already inside the Inverted Index, then an access to the main index file is performed, the search in this file is done by RAF (Random Access File) in order to do a binary search since the terms are already sorted, this results in $ O(log_{2}{n}) $ complexity. In order to make the RAF work, the ``seek()`` method was used to point to a particular byte, then as we can not be assured that we are not reading already in the middle of the line, we read the next line to get a clean line that will be read after. This is fine because the first line would be tested at the beginning of the algorithm to ensure it is not the searched term.
 
 ## Results
 

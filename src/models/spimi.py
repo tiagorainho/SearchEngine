@@ -8,6 +8,8 @@ import psutil
 import heapq
 import os
 import glob
+from threading import Thread
+import time
 
 
 class Spimi():
@@ -20,6 +22,8 @@ class Spimi():
     inverted_index: InvertedIndex
     posting_list_class: PostingList
     posting_type: PostingType
+    ram_usage: float
+
 
     def __init__(self, max_ram_usage: int = 85, max_block_size: int = 10000, auxiliary_dir: str = 'cache/blocks', posting_type: PostingType = PostingType.FREQUENCY) -> None:
         """
@@ -35,6 +39,8 @@ class Spimi():
         self.inverted_index = InvertedIndex(dict(), posting_type)
         self.posting_type = posting_type
         self.posting_list_class = PostingListFactory(posting_type)
+        thread = Thread(target=self.update_ram, daemon=True)
+        thread.start()
 
     @property
     def _inverted_index_size(self) -> int:
@@ -45,6 +51,10 @@ class Spimi():
         """
         return len(self.inverted_index.inverted_index)
 
+    def update_ram(self):
+        while(True):
+            self.ram_usage = psutil.virtual_memory().percent
+
     def add_document(self, doc_id: int, tokens: List[str]) -> None:
         """
         Add a new document to be indexed. The indexing takes into account memory usage and created index size
@@ -53,13 +63,8 @@ class Spimi():
         :param tokens: list of tokens from the document
         :return: None
         """
-        if(psutil.virtual_memory().percent >= self.MAX_RAM_USAGE):
-            self._write_block_to_disk(
-                f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
-            self.inverted_index.clear()
-
         for position, token in enumerate(tokens):
-            if(self._inverted_index_size >= self.MAX_BLOCK_SIZE):
+            if(self.ram_usage >= self.MAX_RAM_USAGE or self._inverted_index_size >= self.MAX_BLOCK_SIZE):
                 self._write_block_to_disk(
                     f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
                 self.inverted_index.clear()
