@@ -13,15 +13,16 @@ This project is an **Information Retrieval** assignment and will be composed by 
 
 ## Install dependencies
 
-Download the code
+Download the code via https:
 ```
-# https
 https://github.com/tiagorainho/SearchEngine.git
-
-# ssh
+```
+or ssh:
+```
 git@github.com:tiagorainho/SearchEngine.git
-
-# zip
+```
+or zip:
+```
 https://github.com/tiagorainho/SearchEngine/archive/refs/heads/main.zip
 ```
 
@@ -89,7 +90,7 @@ The least valuable term of each block is added in a *priority queue* and if ther
 
 The inverted index is characterized by having a dictionary in which the key is the term and the value is a postings list, because of this, an abstraction was created that improves the capabilities of PostingList creation by simplifying its integration.
 Multiple Posting List types are available out of the box such as **Boolean**, **Frequency** and **Positional** Posting List. These classes make it easy for anyone to use any kind of different index types and to be able to test new ideas. To create a new Posting List, all it is needed is to extend the PostingList class in the ``src/models/posting_list.py`` file, then the following methods must be implemented:
-```
+```python
 def __init__(self)->None:
     super().__init__(PostingType)
 
@@ -105,7 +106,7 @@ def merge(posting_lists:List[PostingList])->PostingList:
 ```
 After that, add the created class to the ``posting_list_types`` dictionary as seen bellow:
 ```python
-posting_list_types = {
+posting_list_types:Dict[PostingType, PostingList] = {
     PostingType.BOOLEAN: BooleanPostingList,
     PostingType.FREQUENCY: FrequencyPostingList,
     PostingType.POSITIONAL: PositionalPostingList
