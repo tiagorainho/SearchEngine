@@ -4,11 +4,11 @@ from models.index import InvertedIndex
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
 from pathlib import Path
+from threading import Thread
 import psutil
 import heapq
 import os
 import glob
-from threading import Thread
 import time
 
 
@@ -39,6 +39,8 @@ class Spimi():
         self.inverted_index = InvertedIndex(dict(), posting_type)
         self.posting_type = posting_type
         self.posting_list_class = PostingListFactory(posting_type)
+        self.update_ram = False
+        self.ram_usage = psutil.virtual_memory().percent
         thread = Thread(target=self.update_ram, daemon=True)
         thread.start()
 
@@ -52,10 +54,14 @@ class Spimi():
         return len(self.inverted_index.inverted_index)
 
     def update_ram(self):
-        while(True):
-            self.ram_usage = psutil.virtual_memory().percent
+        while True:
+            if self.update_ram:
+                self.ram_usage = psutil.virtual_memory().percent
+            else:
+                time.sleep(0.001)
 
     def add_document(self, doc_id: int, tokens: List[str]) -> None:
+        self.update_ram = True
         """
         Add a new document to be indexed. The indexing takes into account memory usage and created index size
 
@@ -65,10 +71,10 @@ class Spimi():
         """
         for position, token in enumerate(tokens):
             if(self.ram_usage >= self.MAX_RAM_USAGE or self._inverted_index_size >= self.MAX_BLOCK_SIZE):
-                self._write_block_to_disk(
-                    f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
+                self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
                 self.inverted_index.clear()
             self.inverted_index.add_token(token, doc_id, position)
+        self.update_ram = False
 
     def _write_block_to_disk(self, output_path: str) -> None:
         """
