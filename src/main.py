@@ -98,7 +98,8 @@ class Main:
             parser_generator = parser.parse('\t')
 
             start = time.perf_counter()
-            print(f"Start {str(self.args.posting_list_type).lower().replace('postingtype.','')} indexing...")
+            print(
+                f"Start {str(self.args.posting_list_type).lower().replace('postingtype.','')} indexing...")
 
             for i, (_, parsed_text) in enumerate(parser_generator):
                 tokens = tokenizer.tokenize(parsed_text)
@@ -106,7 +107,8 @@ class Main:
 
             index = indexer.construct_index(OUTPUT_INDEX)
             end = time.perf_counter()
-            print(f"End file indexing {round((end-start), 3)} seconds with {indexer.block_number} temporary file{'s' if indexer.block_number != 1 else ''}")
+            print(
+                f"End file indexing {round((end-start), 3)} seconds with {indexer.block_number} temporary file{'s' if indexer.block_number != 1 else ''}")
 
             indexer.clear_blocks()
 
