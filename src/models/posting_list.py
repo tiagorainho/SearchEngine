@@ -98,7 +98,6 @@ class PositionalPostingList(PostingList):
                 for position in positions:
                     new_posting_list.add(doc_id, position)
         return new_posting_list
-    
 
     def __repr__(self):
         return ' '.join([f"{{{str(doc_id)}:{','.join([str(position) for position in postings_list])}}}" for doc_id, postings_list in self.posting_list.items()])
@@ -127,11 +126,11 @@ class FrequencyPostingList(PostingList):
         posting_lists.remove(new_posting_list)
         for posting_list in posting_lists:
             for doc_id, freq in posting_list.posting_list.items():
-                freq = new_posting_list.posting_list.get(doc_id)
-                if freq == None:
-                    new_posting_list.posting_list[doc_id] = 1
+                new_freq = new_posting_list.posting_list.get(doc_id)
+                if new_freq == None:
+                    new_posting_list.posting_list[doc_id] = freq
                 else:
-                    new_posting_list.posting_list[doc_id] = freq + freq
+                    new_posting_list.posting_list[doc_id] = freq + new_freq
         return new_posting_list
 
     @staticmethod
