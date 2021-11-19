@@ -1,17 +1,25 @@
 # Search Engine
 
+## Index
+- [Motivation](#motivation)
+- [Project Organization](#project-organization)
+- [Install Dependencies](#install-dependencies)
+- [How to Use](#how-to-use)
+- [Content](#content)
+- [Results](#results)
+
 ## Motivation
 
 When there is a need to search terms from multiple large documents, inevitably the problem of long delays during fetching of documents from a list of terms will occur, this project aims to speed up that process while increasing other measures of quality in the process by indexing the *text corpus*.
 
-## Why
+## Project Organization
 
 This project is an **Information Retrieval** assignment and will be composed by 3 different steps:
 - [x] Parser, Tokenizer, Indexer steps and light searcher
 - [ ] Complex Searcher
 - [ ] Other
 
-## Install dependencies
+## Install Dependencies
 
 Download the code via *https*:
 ```
@@ -62,10 +70,6 @@ The following classes, their hierarchical structure and relevant features are th
     - [Frequency Posting List](#frequency-posting-list)
     - [Positional Posting List](#positional-posting-list)
 
-
-## In depth
-
-In this section, a more in depth look will be taken into each class.
 
 ### Parser
 
@@ -199,3 +203,4 @@ The following table presents the statistics related to the search of the term **
 | Digital_Music_Purchase   | 0.0045 ms             | 0.130 ms    | 1672       |
 | Music                    | 0.0044 ms             | 0.745 ms    | 14995      |
 | Books                    | 0.0045 ms             | 4.556 ms    | 7323       |
+
