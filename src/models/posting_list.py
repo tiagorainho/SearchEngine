@@ -51,9 +51,6 @@ class BooleanPostingList(PostingList):
         posting_lists.remove(new_posting_list)
         for boolean_posting_list in posting_lists:
             new_posting_list.posting_list.update(boolean_posting_list.posting_list)
-            #for doc_id in boolean_posting_list.posting_list:
-            #    new_posting_list.posting_list.add(doc_id)
-            #new_posting_list.posting_list = new_posting_list.posting_list.union(boolean_posting_list.posting_list)
         return new_posting_list
 
     def __repr__(self):
