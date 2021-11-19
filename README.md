@@ -13,15 +13,15 @@ This project is an **Information Retrieval** assignment and will be composed by 
 
 ## Install dependencies
 
-Download the code via https:
+Download the code via *https*:
 ```
 https://github.com/tiagorainho/SearchEngine.git
 ```
-or ssh:
+or *ssh*:
 ```
 git@github.com:tiagorainho/SearchEngine.git
 ```
-or zip:
+or *zip*:
 ```
 https://github.com/tiagorainho/SearchEngine/archive/refs/heads/main.zip
 ```
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 Create the index
 ```
-python3 src/main.py --stop-words stop_words.txt --min-token-length 4 --language english --max-block-size 50000 --max-ram 95 --posting-list-type positional --documents datasets/example.csv
+python3 src/main.py --stop-words stop_words.txt --min-token-length 3 --language english --max-block-size 50000 --max-ram 95 --posting-list-type positional --documents datasets/example.csv
 ```
 Search in the index
 ```
@@ -136,58 +136,66 @@ A ``light_search()`` method was also implemented to add searchable capabilities,
 
 ## Results
 
+The arguments provided for the **index creation** are the following:
+
+| Variable               | Value             |
+| :--------------------- | ----------------- |
+| stop words             | stop_words.txt    |
+| min token              | 3                 |
+| language               | english           |
+| max block size         | 50 000            |
+| max ram                | 95                |
+
+
 All results were performed using a MacBookPro M1 with the following specs:
 - Apple M1, 8 core 3.2 GHz CPU
 - 16 GB Ram
 - 256 GB SSD
 
 
-And with the following program constant inputs:
-
-| Variable                | Value               |
-| :---------------------- | ------------------- |
-| stop words              | stop_words.txt      |
-| min token               | 3                   |
-| language                | english             |
-| max block size          | 50 000              |
-| max ram                 | 95                  |
-
-
 ### Boolean Posting List
 
 Set of document ids.
 
-| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks | Nº of Terms | Searcher
-| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- | ----------- |
-| Digital_Video_Games_v1_00    | 26.2 MB            | 25.80 MB        | 13.598 sec       | 2                |             |
-| Digital_Music_Purchase_v1_00 | 241.8 MB           | 252.50 MB       | 1.894 min        | 20               |             |
-| Music_v1_00                  | 1.4 GB             | 1.75 GB         | 12.982 min       | 164              |             |
-| Books_v1_00                  | 2.6 GB             | 2.84 GB         | 22.241 min       | 239              |             |
+| Dataset                  | Original File Size | Index File Size | Index Build Time | Temporary Blocks | Nº of Terms | 
+| :----------------------- | ------------------ | --------------- | ---------------- | ---------------- | ----------- |
+| Digital_Video_Games      | 26.2 MB            | 25.80 MB        | 13.598 sec       | 2                | 53 594      |
+| Digital_Music_Purchase   | 241.8 MB           | 252.50 MB       | 1.894 min        | 20               | 312 903     |
+| Music                    | 1.4 GB             | 1.75 GB         | 12.982 min       | 164              | 1 041 499   |
+| Books                    | 2.6 GB             | 2.84 GB         | 22.241 min       | 239              | 1 626 371   |
 
 
 ### Frequency Posting List
 
 Data structure where the document id connects to an integer that represents the number of times that term has occured inside the given document.
 
-| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks | Nº of Terms |
-| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- | ----------- |
-| Digital_Video_Games_v1_00    | 26.2 MB            | 32.70 MB        | 14.647 sec       | 2                |             |
-| Digital_Music_Purchase_v1_00 | 241.8 MB           | 318.80 MB       | 2.020 min        | 20               |             |
-| Music_v1_00                  | 1.4 GB             | 2.18 GB         | 13.742 min       | 164              |             |
-| Books_v1_00                  | 2.6 GB             | 2.84 GB         | 24.310 min       | 239              |             |
+| Dataset                  | Original File Size | Index File Size | Index Build Time | Temporary Blocks | Nº of Terms | 
+| :----------------------- | ------------------ | --------------- | ---------------- | ---------------- | ----------- |
+| Digital_Video_Games      | 26.2 MB            | 32.70 MB        | 14.647 sec       | 2                | 53 594      |
+| Digital_Music_Purchase   | 241.8 MB           | 318.80 MB       | 2.020 min        | 20               | 312 903     |
+| Music                    | 1.4 GB             | 2.18 GB         | 13.742 min       | 164              | 1 041 499   |
+| Books                    | 2.6 GB             | 3.54 GB         | 24.310 min       | 239              | 1 626 371   |
 
 
 ### Positional Posting List
 
 Data Structure where the document id links to a list of positions where the term has occured inside the document.
 
-| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks | Nº of Terms |
-| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- | ----------- |
-| Digital_Video_Games_v1_00    | 26.2 MB            | 40.03 MB        | 20.878 sec       | 2                |             |
-| Digital_Music_Purchase_v1_00 | 241.8 MB           | 370.00 MB       | 3.432 min        | 20               |             |
-| Music_v1_00                  | 1.4 GB             | 2.64 GB         | 26.953 min       | 164              |             |
-| Books_v1_00                  | 2.6 GB             | 4.33 GB         | 46.614 min       | 239              |             |
+| Dataset                  | Original File Size | Index File Size | Index Build Time | Temporary Blocks | Nº of Terms |
+| :----------------------- | ------------------ | --------------- | ---------------- | ---------------- | ----------- |
+| Digital_Video_Games      | 26.2 MB            | 40.03 MB        | 20.878 sec       | 2                | 53 594      |
+| Digital_Music_Purchase   | 241.8 MB           | 370.00 MB       | 3.432 min        | 20               | 312 903     |
+| Music                    | 1.4 GB             | 2.64 GB         | 26.953 min       | 164              | 1 041 499   |
+| Books                    | 2.6 GB             | 4.33 GB         | 46.614 min       | 239              | 1 626 371   |
 
 
 ### Light Search
 
+The following table presents the statistics related to the search of the term **'hello'** using an index with **frequency** posting lists.
+
+| Dataset                  | Searcher Startup Time | Search Time | Occurances |
+| :----------------------- | --------------------- | ----------- | ---------- |
+| Digital_Video_Games      | 0.0041 ms             | 0.469 ms    | 112        |
+| Digital_Music_Purchase   | 0.0045 ms             | 0.130 ms    | 1672       |
+| Music                    | 0.0044 ms             | 0.745 ms    | 14995      |
+| Books                    | 0.0045 ms             | 4.556 ms    | 7323       |
