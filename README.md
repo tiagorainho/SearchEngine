@@ -22,12 +22,12 @@ This project is an **Information Retrieval** assignment and will be composed by 
 ## Install Dependencies
 
 Download the code via *https*:
-```
-https://github.com/tiagorainho/SearchEngine.git
+```bash
+git clone https://github.com/tiagorainho/SearchEngine.git
 ```
 or *ssh*:
-```
-git@github.com:tiagorainho/SearchEngine.git
+```bash
+git clone git@github.com:tiagorainho/SearchEngine.git
 ```
 or *zip*:
 ```
@@ -35,23 +35,23 @@ https://github.com/tiagorainho/SearchEngine/archive/refs/heads/main.zip
 ```
 
 Create virtual environment and activate it
-```
+```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 Install dependencies
-```
+```bash
 pip install -r requirements.txt
 ```
 
 ## How to use
 
 Create the index
-```
+```bash
 python3 src/main.py --stop-words stop_words.txt --min-token-length 3 --language english --max-block-size 50000 --max-ram 95 --posting-list-type positional --documents datasets/example.csv
 ```
 Search in the index
-```
+```bash
 python3 src/main.py --search-index cache/index/index_file.index --posting-list-type positional --search-terms good to know you
 ```
 
@@ -131,7 +131,7 @@ posting_list_types:Dict[PostingType, PostingList] = {
 }
 ```
 To use the newly created PostingList in the indexer, in this case SPIMI, add the posting type in the instantiation.
-```
+```python
 indexer = Spimi(max_ram_usage=95, max_block_size=50000, auxiliary_dir=BLOCK_DIR, posting_type=PostingType.POSITIONAL)
 ```
 After only this simple steps, we have a functional index with a completly different PostingList implementation.
