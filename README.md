@@ -157,36 +157,36 @@ And with the following program constant inputs:
 
 Set of document ids.
 
-| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks |
-| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- |
-| Digital_Video_Games_v1_00    | 26.2 MB            | 25.80 MB        | 13.598 sec       | 2                |
-| Digital_Music_Purchase_v1_00 | 241.8 MB           | 252.50 MB       | 2.013 min        | 20               |
-| Music_v1_00                  | 1.4 GB             | 1.75 GB         | 18.279 min       | 164              |
-| Books_v1_00                  | 2.6 GB             | 2.84 GB         | 36.028 min       | 239              |
+| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks | Nº of Terms | Searcher
+| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- | ----------- |
+| Digital_Video_Games_v1_00    | 26.2 MB            | 25.80 MB        | 13.598 sec       | 2                |             |
+| Digital_Music_Purchase_v1_00 | 241.8 MB           | 252.50 MB       | 1.894 min        | 20               |             |
+| Music_v1_00                  | 1.4 GB             | 1.75 GB         | 12.982 min       | 164              |             |
+| Books_v1_00                  | 2.6 GB             | 2.84 GB         | 22.241 min       | 239              |             |
 
 
 ### Frequency Posting List
 
 Data structure where the document id connects to an integer that represents the number of times that term has occured inside the given document.
 
-| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks |
-| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- |
-| Digital_Video_Games_v1_00    | 26.2 MB            | 32.70 MB        | 14.647 sec       | 2                |
-| Digital_Music_Purchase_v1_00 | 241.8 MB           | 318.80 MB       | 2.020 min        | 20               |
-| Music_v1_00                  | 1.4 GB             | 2.18 GB         | 13.742 min       | 164              |
-| Books_v1_00                  | 2.6 GB             | 2.84 GB         | 24.310 min       | 239              |
+| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks | Nº of Terms |
+| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- | ----------- |
+| Digital_Video_Games_v1_00    | 26.2 MB            | 32.70 MB        | 14.647 sec       | 2                |             |
+| Digital_Music_Purchase_v1_00 | 241.8 MB           | 318.80 MB       | 2.020 min        | 20               |             |
+| Music_v1_00                  | 1.4 GB             | 2.18 GB         | 13.742 min       | 164              |             |
+| Books_v1_00                  | 2.6 GB             | 2.84 GB         | 24.310 min       | 239              |             |
 
 
 ### Positional Posting List
 
 Data Structure where the document id links to a list of positions where the term has occured inside the document.
 
-| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks |
-| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- |
-| Digital_Video_Games_v1_00    | 26.2 MB            | 48.80 MB        | 20.878 sec       | 2                |
-| Digital_Music_Purchase_v1_00 | 241.8 MB           | 436.30 MB       | 3.432 min        | 20               |
-| Music_v1_00                  | 1.4 GB             | 3.080 GB        | 26.953 min       | 164              |
-| Books_v1_00                  | 2.6 GB             | 5.020 GB        | 46.614 min       | 239              |
+| Dataset                      | Original File Size | Index File Size | Index Build Time | Temporary Blocks | Nº of Terms |
+| :--------------------------- | ------------------ | --------------- | ---------------- | ---------------- | ----------- |
+| Digital_Video_Games_v1_00    | 26.2 MB            | 40.03 MB        | 20.878 sec       | 2                |             |
+| Digital_Music_Purchase_v1_00 | 241.8 MB           | 370.00 MB       | 3.432 min        | 20               |             |
+| Music_v1_00                  | 1.4 GB             | 2.64 GB         | 26.953 min       | 164              |             |
+| Books_v1_00                  | 2.6 GB             | 4.33 GB         | 46.614 min       | 239              |             |
 
 
 ### Light Search

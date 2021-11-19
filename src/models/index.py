@@ -16,6 +16,15 @@ class InvertedIndex:
         self.inverted_index = inverted_index if inverted_index != None else dict()
         self.posting_list_class = PostingListFactory(posting_type)
         self.file = output_path
+        if inverted_index == None and output_path != None:
+            self.load_dictionary(output_path)
+            
+
+    def load_dictionary(self, file_name:str):
+        with open(file_name, "r", encoding='utf-8', errors='ignore') as file:
+            term = file.readline().split(self.delimiter, 1)[0]
+            self.inverted_index[term] = None
+
 
     def light_search(self, terms: List[str]) -> List[int]:
         matches = []

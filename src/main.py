@@ -97,10 +97,10 @@ class Main:
 
             parser_generator = parser.parse('\t')
 
-            start = time.perf_counter()
             print(
                 f"Start {str(self.args.posting_list_type).lower().replace('postingtype.','')} indexing...")
-
+            
+            start = time.perf_counter()
             for i, (_, parsed_text) in enumerate(parser_generator):
                 tokens = tokenizer.tokenize(parsed_text)
                 indexer.add_document(doc_id=i, tokens=tokens)
@@ -117,8 +117,12 @@ class Main:
     def search(self):
         tokenizer = Tokenizer(self.args.min_token_length,
                               self.args.stop_words, self.args.language)
+
+        t1 = time.perf_counter()
         index = InvertedIndex(None, self.args.posting_list_type,
                               self.args.search_index)
+        t2 = time.perf_counter()
+        print(f"Time to start searcher {(t2-t1)* 100}ms")
 
         tokens = tokenizer.tokenize(" ".join(self.args.search_terms))
 
