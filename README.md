@@ -74,7 +74,7 @@ The following classes, their hierarchical structure and relevant features are th
 ### Parser
 
 In order to decrease cache misses in a large list and also to better management of RAM (Random Access Memory), the ``parse()`` function does not return a list of parsed texts, instead it yields the parsed text in chuncks. This did **not** improve the performance of the algorithm but the opposite, however this can be explained by the large amount of RAM of the computer, if it was a worse computer or larger dataset probably this change would have done a positive effect in the overall performance.
-This class can process both *csv* and *tsv.gz* files.
+This class processes *tsv.gz* files.
 
 ### Tokenizer
 
