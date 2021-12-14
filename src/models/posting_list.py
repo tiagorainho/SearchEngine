@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, List, Set
+from typing import Dict, FrozenSet, List, Set
 from models.posting import PostingType
 
 
@@ -57,22 +57,24 @@ class BooleanPostingList(PostingList):
         return ' '.join([str(posting) for posting in self.posting_list])
 
 
-
 class FrequencyPostingList(PostingList):
 
     posting_list: Dict[int, int]
-
+    
     def __init__(self):
         super().__init__(PostingType.FREQUENCY)
         self.posting_list = dict()
+
 
     def add(self, doc_id:int, position:int=None):
         freq = self.posting_list.get(doc_id)
         if freq == None: self.posting_list[doc_id] = 1
         else: self.posting_list[doc_id] = freq + 1
-    
+        
+
     def get_documents(self) -> List[int]:
         return list(self.posting_list.keys())
+        
 
     @staticmethod
     def merge(posting_lists:List[FrequencyPostingList]) -> FrequencyPostingList:

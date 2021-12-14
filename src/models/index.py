@@ -2,6 +2,7 @@
 from typing import Dict, List, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
+import math
 
 
 class InvertedIndex:
@@ -61,7 +62,7 @@ class InvertedIndex:
     def clear(self):
         self.inverted_index.clear()
 
-    def add_token(self, token: str, doc_id: int, position: int) -> None:
+    def add_tokens(self, tokens: List[str], doc_id: int) -> None:
         """
         Adds the document id and position to the Postings list of the respective token
 
@@ -70,13 +71,23 @@ class InvertedIndex:
         :param position: position of the token in the respective document id
         :return: None
         """
-        posting_list = self.inverted_index.get(token)
+        l = dict()
 
-        if posting_list == None:
-            posting_list = self.posting_list_class()
-            self.inverted_index[token] = posting_list
+        for token in tokens:
+            l[token] = 1 + math.log(len([t for t in tokens if t == token]))
 
-        posting_list.add(doc_id, position)
+        c = math.sqrt(sum(l.values()))
+
+        for position, token in enumerate(tokens):
+            posting_list = self.inverted_index.get(token)
+
+            if posting_list == None:
+                posting_list = self.posting_list_class()
+                self.inverted_index[token] = posting_list
+
+            posting_list.add(doc_id, position)
+
+            posting_list.term_weight = l[token]*c
 
     def sorted_terms(self):
         """
@@ -89,10 +100,17 @@ class InvertedIndex:
     def save(self, output_file: str) -> None:
         with open(output_file, 'w') as file:
             for term in self.sorted_terms():
-                line = f'{ term }{ self.delimiter }{ self.inverted_index[term] }\n'
+                line = f'{ term }{ self.delimiter }{ self.inverted_index[term] }/{round(self.inverted_index[term].term_weight,3)}\n'
                 file.write(line)
 
     def load(self, line: str) -> Tuple[str, PostingList]:
+        """"
+        parts = line.split(self.delimiter, 1)
+        posting_list_parts = parts[1].split('/')
+        posting_list = self.posting_list_class.load(posting_list_parts[0])
+        posting_list.term_weight = posting_list_parts[1]
+        return parts[0], posting_list
+        """
         parts = line.split(self.delimiter, 1)
         return parts[0], self.posting_list_class.load(parts[1])
 

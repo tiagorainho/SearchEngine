@@ -1,26 +1,27 @@
 from io import FileIO
-from typing import Dict, Generator, List, Tuple
+from typing import DefaultDict, Dict, Generator, List, Tuple
 from models.index import InvertedIndex
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
+from collections import defaultdict
 from pathlib import Path
 import threading
 import psutil
 import heapq
 import os
 import glob
-
+import math
 
 class Spimi():
     AUXILIARY_DIR: str
     BLOCK_SUFFIX: str = 'block'
     MAX_BLOCK_SIZE: int
     MAX_RAM_USAGE: int
-    MAX_USAGE_BLOCK: int
     block_number: int
     inverted_index: InvertedIndex
     posting_list_class: PostingList
     posting_type: PostingType
+    documents_length: DefaultDict
     ram_usage: float
     can_update_ram: threading.Event
     document_done: threading.Event
@@ -34,11 +35,12 @@ class Spimi():
         self.MAX_BLOCK_SIZE = max_block_size
         self.MAX_RAM_USAGE = max_ram_usage
         self.AUXILIARY_DIR = auxiliary_dir
-        self.MAX_USAGE_BLOCK = 3
         self.block_number = 0
         self.inverted_index = InvertedIndex(dict(), posting_type)
         self.posting_type = posting_type
         self.posting_list_class = PostingListFactory(posting_type)
+        self.documents_length = defaultdict(int)
+        
         self.ram_usage = self.get_ram_usage()
         self.can_update_ram = threading.Event()
         self.document_done = threading.Event()
@@ -46,6 +48,7 @@ class Spimi():
         self.can_update_ram.set()
         thread = threading.Thread(target=self.update_ram, daemon=True)
         thread.start()
+        
          
 
     def get_ram_usage(self):
@@ -67,13 +70,16 @@ class Spimi():
         :return: None
         """
         self.can_update_ram.set()
-        for position, token in enumerate(tokens):
-            if(self.ram_usage >= self.MAX_RAM_USAGE or self._inverted_index_size >= self.MAX_BLOCK_SIZE):
-                self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
-                self.inverted_index.clear()
-            self.inverted_index.add_token(token, doc_id, position)
+
+        self.documents_length[doc_id] += len(tokens)
+        self.inverted_index.add_tokens(tokens, doc_id)
+
         self.can_update_ram.clear()
         self.document_done.wait()
+
+        if(self._inverted_index_size >= self.MAX_BLOCK_SIZE or self.ram_usage >= self.MAX_RAM_USAGE):
+            self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
+            self.inverted_index.clear()
 
     @property
     def _inverted_index_size(self) -> int:
@@ -86,7 +92,7 @@ class Spimi():
 
     def _write_block_to_disk(self, output_path: str) -> None:
         """
-        Write an inverted index to a given file based on the
+        Write an inverted index to a given file
 
         :param output_file: file to write the index
         :return: None
@@ -203,8 +209,22 @@ class Spimi():
         with open(Path(output_path).resolve(), 'w') as output_file:
             # get mininum terms and their respective posting list
             for term, posting_list in min_term_generator:
-                output_file.write(f"{term} {posting_list}\n")
-                index[term] = None
+
+
+
+
+                # sum_all_frequencies = sum([])
+                # term_weight = 1 + math.log(posting_list) # acabar posting list
+                # normalised_term_weight = math.sqrt(sum([p. for p in posting_list]))
+                # idf = 1
+
+
+                idf = round(math.log(len(self.documents_length.keys())/len(posting_list.posting_list)),2)
+
+
+                output_file.write(f"{term} {posting_list}/{idf}\n")
+                #output_file.write(f"{term} {posting_list}\n")
+                index[term] = posting_list # None    # DEIXAR NONE -------------------------------------------------------------------------------------------------------------------
 
         return InvertedIndex(index, self.posting_type, output_path)
 
