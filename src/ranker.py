@@ -35,22 +35,27 @@ class Ranker:
     def calculate_idf(self, posting_list:PostingList):
         pass
 
-    def order(self, terms:List[str], posting_list:PostingList) -> List[int]:
-        # query
-        print(posting_list)
-
-        # index
-        for term in terms:
-            pass
-
-    
-        return 1
+    @staticmethod
+    def order(terms:List[str], posting_list:PostingList) -> List[int]:
+        return []
 
 class TF_IDF_Ranker(Ranker):
     documents_length: DefaultDict
 
     def __init__(self):
         self.documents_length = defaultdict(lambda: 0)
+    
+    @staticmethod
+    def order(terms:List[str], posting_list:PostingList) -> List[int]:
+        results = []
+        # query
+        
+
+        # index
+        for term in terms:
+            pass
+
+        return results
 
     
     def calculate_tf(self, doc_id:int, tokens:List[str]):
@@ -112,11 +117,6 @@ def RankerFactory(method:RankingMethod) -> Ranker:
 
 
 if __name__ == '__main__':
-    TF_IDF_Ranker.setup()
-    print(TF_IDF_Ranker.variables)
-    a = TF_IDF_Ranker()
-    print(TF_IDF_Ranker.variables)
-    b = TF_IDF_Ranker()
-    print(TF_IDF_Ranker.variables)
+    pass
 
 

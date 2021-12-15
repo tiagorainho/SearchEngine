@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
 
-from ranker import Ranker, RankingMethod
+from ranker import Ranker, RankerFactory, RankingMethod
 
 
 class InvertedIndex:
@@ -33,13 +33,11 @@ class InvertedIndex:
 
     def search(self, terms: List[str], n:int=10, ranking_method:RankingMethod = RankingMethod.TF_IDF) -> List[int]:
         posting_lists = self.light_search(terms)
-        print(posting_lists)
-        exit(0)
-        return ranking_method.order(terms, posting_lists)[:n]
+        return RankerFactory(ranking_method).order(terms, posting_lists)[:n]
 
 
 
-    def light_search(self, terms: List[str]) -> List[int]:
+    def light_search(self, terms: List[str]) -> List[PostingList]:
         matches = []
 
         with open(self.file, "r", encoding='utf-8', errors='ignore') as file:
@@ -67,13 +65,8 @@ class InvertedIndex:
                         min = middle
 
                 if term == line_term:
-                    
-
-                    posting_list = self.posting_list_class.load_index(line).get_documents()
-                    # return parts[0], self.posting_list_class.load_blocks(parts[1])
-                    #matches.extend(
-                    # self.load(line)[1].get_documents())
-                    matches.extend(posting_list)
+                    posting_list = self.posting_list_class.load_index(line)
+                    matches.append(posting_list)
 
         return matches
 

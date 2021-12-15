@@ -175,5 +175,5 @@ if __name__ == '__main__':
     
     tokens = tokenizer.tokenize(" ".join(search_terms))
     matches_light = index.search(tokens, 10)
-    print(f"{matches_light}")
+    print(f"result: {matches_light}")
     
