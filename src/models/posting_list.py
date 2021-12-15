@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import defaultdict
 from typing import Dict, FrozenSet, List, Set
 from models.posting import PostingType
 
@@ -64,12 +65,13 @@ class BooleanPostingList(PostingList):
 
 
 class FrequencyPostingList(PostingList):
-
     posting_list: Dict[int, int]
-    
+    term_weight : Dict[int, float]
+
     def __init__(self):
         super().__init__(PostingType.FREQUENCY)
         self.posting_list = dict()
+        self.term_weight = defaultdict(int)
 
 
     def add(self, doc_id:int, position:int=None):

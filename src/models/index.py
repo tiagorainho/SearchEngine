@@ -5,6 +5,8 @@ from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
 import math
 
+from ranker import Ranker
+
 
 class InvertedIndex:
     inverted_index: Dict[str, PostingList]
@@ -30,6 +32,7 @@ class InvertedIndex:
 
     def search(self, terms: List[str]) -> List[int]:
         pass
+
 
     def light_search(self, terms: List[str]) -> List[int]:
         matches = []
@@ -66,7 +69,7 @@ class InvertedIndex:
     def clear(self):
         self.inverted_index.clear()
 
-    def add_tokens(self, tokens: List[str], doc_id: int) -> None:
+    def add_tokens(self, tokens: List[str], doc_id: int, ranker:Ranker) -> None:
         """
         Adds the document id and position to the Postings list of the respective token
 
@@ -75,25 +78,20 @@ class InvertedIndex:
         :param position: position of the token in the respective document id
         :return: None
         """
-        l = dict()
-        for token in tokens:
-            l[token] = 1 + math.log(sum([1 for t in tokens if t == token]))
-        c = math.sqrt(sum(l.values()))
+
+        tfs = ranker.calculate_tf(doc_id, tokens)
+        weights =  ranker.uniform_weight(tfs)
 
         for position, token in enumerate(tokens):
             posting_list:PostingList = self.inverted_index.get(token)
 
             if posting_list == None:
                 posting_list = self.posting_list_class()
+                posting_list.term_weight[doc_id] = weights[token]
                 self.inverted_index[token] = posting_list
 
             posting_list.add(doc_id, position)
 
-
-            if 'term_weight' not in posting_list.__dict__:
-                posting_list.term_weight = dict()
-
-            posting_list.term_weight[doc_id] = l[token]*c
 
     def sorted_terms(self):
         """

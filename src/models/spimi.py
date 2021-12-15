@@ -12,6 +12,8 @@ import os
 import glob
 import math
 
+from ranker import Ranker, RankerFactory, RankingMethod
+
 class Spimi():
     AUXILIARY_DIR: str
     BLOCK_SUFFIX: str = 'block'
@@ -21,12 +23,11 @@ class Spimi():
     inverted_index: InvertedIndex
     posting_list_class: PostingList
     posting_type: PostingType
-    documents_length: DefaultDict
     ram_usage: float
     can_update_ram: threading.Event
     document_done: threading.Event
 
-    def __init__(self, max_ram_usage: int = 85, max_block_size: int = 10000, auxiliary_dir: str = 'cache/blocks', posting_type: PostingType = PostingType.FREQUENCY) -> None:
+    def __init__(self, max_ram_usage: int = 85, max_block_size: int = 10000, auxiliary_dir: str = 'cache/blocks', posting_type: PostingType = PostingType.FREQUENCY, ranker_type:RankingMethod=RankingMethod.TF_IDF) -> None:
         """
         Creates a new instance of a SPIMI indexer, this is used to create indexes and initialize static variables
 
@@ -41,6 +42,8 @@ class Spimi():
         self.posting_list_class = PostingListFactory(posting_type)
         self.documents_length = defaultdict(int)
         
+        self.ranker = RankerFactory(ranker_type)()
+
         self.ram_usage = self.get_ram_usage()
         self.can_update_ram = threading.Event()
         self.document_done = threading.Event()
@@ -70,10 +73,7 @@ class Spimi():
         :return: None
         """
         self.can_update_ram.set()
-
-        self.documents_length[doc_id] += len(tokens)
-        self.inverted_index.add_tokens(tokens, doc_id)
-
+        self.inverted_index.add_tokens(tokens, doc_id, self.ranker)
         self.can_update_ram.clear()
         self.document_done.wait()
 
@@ -209,20 +209,8 @@ class Spimi():
         with open(Path(output_path).resolve(), 'w') as output_file:
             # get mininum terms and their respective posting list
             for term, posting_list in min_term_generator:
-
-
-
-
-                # sum_all_frequencies = sum([])
-                # term_weight = 1 + math.log(posting_list) # acabar posting list
-                # normalised_term_weight = math.sqrt(sum([p. for p in posting_list]))
-                # idf = 1
-
-                idf = round(math.log(len(self.documents_length.keys())/len(posting_list.posting_list.keys())),2)
-                print(posting_list)
-
+                idf = self.ranker.calculate_idf(posting_list)
                 output_file.write(f"{term} {posting_list}/{idf}\n")
-                #output_file.write(f"{term} {posting_list}\n")
                 index[term] = posting_list # None    # DEIXAR NONE -------------------------------------------------------------------------------------------------------------------
 
         return InvertedIndex(index, self.posting_type, output_path)

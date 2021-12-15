@@ -1,9 +1,11 @@
 
 from __future__ import annotations
 from enum import Enum
-from typing import Any, Dict
 from collections import defaultdict
 import math
+from typing import Dict, DefaultDict, List
+
+from models.posting_list import PostingList
 
 
 class RankingMethod(Enum):
@@ -27,47 +29,61 @@ class Ranker:
     def calculate_score(self):
         pass
     
-    def add(self, doc_id:int, **kwargs):
+    def calculate_tf(self, doc_id:int, tokens:List[str]) -> Dict[str, float]:
         pass
 
-    def relative_repr(self, doc_id:int):
-        pass
-
-    def global_repr(self):
+    def calculate_idf(self, posting_list:PostingList):
         pass
 
 
 class TF_IDF_Ranker(Ranker):
-    
+    documents_length: DefaultDict
+
     def __init__(self):
-        self.docs_length = defaultdict(lambda: 0)
+        self.documents_length = defaultdict(lambda: 0)
 
     
-    def add(self, doc_id:int, **kwargs):
+    def calculate_tf(self, doc_id:int, tokens:List[str]):
         """
         :param position: word position inside document
         :param doc_id: document ID
         """
-        self.docs_length[doc_id] += 1
+        if doc_id not in self.documents_length:
+            self.documents_length[doc_id] = len(tokens)
 
+        term_frequencies = dict()
 
-    def relative_repr(self, doc_id:int):
-        # N
-        return f'{ str(TF_IDF_Ranker.variables["docs_length"][doc_id]) }'
+        for token in tokens:
+            tf = len([t for t in tokens if t == token])
+            term_frequencies[token] = self.uniform_tf(tf)
+            
+            
+        return term_frequencies
+    
+    def uniform_tf(self, tf):
+        return 1 + math.log10(tf)
 
-    def global_repr(self):
-        return f'{ str(len(TF_IDF_Ranker.variables["docs_length"])) }'
-        
-    def clear(self):
+    def calculate_idf(self, posting_list:PostingList):
+        return round(math.log(len(self.documents_length.keys())/len(posting_list.posting_list.keys())),3)
+    
+
+    def calculate_weights(self, tfs):
+        return [tf for tf in tfs.values()]
+
+    def calculate_score(self):
         pass
+    
 
-    def pre_calculatation(self, term:str):
-        # idf
-        return math.log10( len(TF_IDF_Ranker.variables["docs_length"])/sum() )
+    def uniform_weight(self, tfs):
+        normalized_weights = {}
+        weights = self.calculate_weights(tfs)
+        sum_weights = sum([weight*weight for weight in weights])
+        sqrt_weights = math.sqrt(sum_weights)
 
+        for term, tf in tfs.items():
+            normalized_weights[term] = tf / sqrt_weights
 
-    def score(self, term:str):
-        return self.pre_calculatation(term) + 1#etc
+        return normalized_weights
 
 
 
