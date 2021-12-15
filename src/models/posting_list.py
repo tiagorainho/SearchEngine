@@ -16,13 +16,19 @@ class PostingList:
         pass
 
     @staticmethod
-    def load(line:str)->PostingList:
+    def load_blocks(line:str)->PostingList:
+        pass
+
+    @staticmethod
+    def load_index(line:str)->PostingList:
         pass
 
     @staticmethod
     def merge(posting_lists:List[PostingList])->PostingList:
         pass
 
+    def block_repr(self):
+        pass
 
 class BooleanPostingList(PostingList):
 
@@ -90,16 +96,32 @@ class FrequencyPostingList(PostingList):
         return new_posting_list
 
     @staticmethod
-    def load(line) -> FrequencyPostingList:
+    def load_blocks(line) -> FrequencyPostingList:
         new_posting_list = FrequencyPostingList()
         for posting in line.split(' '):
-            parts = posting.split('-')
-            new_posting_list.posting_list[parts[0]] = parts[1]
+            docid_posting = posting.split('-')
+            freq_weight = docid_posting[1].split('/')
+            new_posting_list.posting_list[docid_posting[0]] = freq_weight[0]
+
+            new_posting_list.term_weight = dict()
+            new_posting_list.term_weight[freq_weight[0]] = float(freq_weight[1])
         return new_posting_list
     
+    @staticmethod
+    def load_index(line:str)->PostingList:
+        new_posting_list = FrequencyPostingList()
+        postinglist_idf = line.split('/')
+        new_posting_list.idf = postinglist_idf[1]
+        for posting in postinglist_idf[0].split(' '):
+            docid_posting = posting.split('-')
+            new_posting_list.posting_list[docid_posting[0]] = docid_posting[1]
+        return new_posting_list
+    
+    def block_repr(self):
+        return ' '.join([f'{doc_id}-{freq}/{round(self.term_weight[doc_id], 3)}' for doc_id, freq in self.posting_list.items()])
+
     def __repr__(self):
         return ' '.join([f'{doc_id}-{freq}' for doc_id, freq in self.posting_list.items()])
-
 
 
 class PositionalPostingList(PostingList):

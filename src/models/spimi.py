@@ -218,9 +218,8 @@ class Spimi():
                 # normalised_term_weight = math.sqrt(sum([p. for p in posting_list]))
                 # idf = 1
 
-
-                idf = round(math.log(len(self.documents_length.keys())/len(posting_list.posting_list)),2)
-
+                idf = round(math.log(len(self.documents_length.keys())/len(posting_list.posting_list.keys())),2)
+                print(posting_list)
 
                 output_file.write(f"{term} {posting_list}/{idf}\n")
                 #output_file.write(f"{term} {posting_list}\n")

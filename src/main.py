@@ -147,7 +147,7 @@ if __name__ == '__main__':
     stop_words = 'stop_words.txt'
     min_token_length = 0
     language = None
-    texts = ['ola tudo bem, curto bue de escrever ola', " e tu? ta td fixe cnt"]
+    texts = ['ola bem bem, curto bue de escrever ola', " e tu? ta bem td fixe oi oi ola cnt"]
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
