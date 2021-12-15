@@ -210,7 +210,7 @@ class Spimi():
             # get mininum terms and their respective posting list
             for term, posting_list in min_term_generator:
                 idf = self.ranker.calculate_idf(posting_list)
-                output_file.write(f"{term} {posting_list}/{idf}\n")
+                output_file.write(f"{term} {posting_list.write_auxiliar_block()}#{idf}\n")
                 index[term] = posting_list # None    # DEIXAR NONE -------------------------------------------------------------------------------------------------------------------
 
         return InvertedIndex(index, self.posting_type, output_path)

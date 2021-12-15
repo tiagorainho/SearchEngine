@@ -35,6 +35,16 @@ class Ranker:
     def calculate_idf(self, posting_list:PostingList):
         pass
 
+    def order(self, terms:List[str], posting_list:PostingList) -> List[int]:
+        # query
+        print(posting_list)
+
+        # index
+        for term in terms:
+            pass
+
+    
+        return 1
 
 class TF_IDF_Ranker(Ranker):
     documents_length: DefaultDict

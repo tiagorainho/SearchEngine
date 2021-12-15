@@ -127,7 +127,7 @@ class Main:
         tokens = tokenizer.tokenize(" ".join(self.args.search_terms))
 
         t1 = time.perf_counter()
-        matches_light = index.light_search(tokens)
+        matches_light = index.search(tokens, 10)
         t2 = time.perf_counter()
         print(f"Search in {(t2-t1)* 100}ms")
         print(f"{matches_light}")
@@ -148,6 +148,7 @@ if __name__ == '__main__':
     min_token_length = 0
     language = None
     texts = ['ola bem bem, curto bue de escrever ola', " e tu? ta bem td fixe oi oi ola cnt"]
+    search_terms = ["ola"]
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
@@ -156,19 +157,23 @@ if __name__ == '__main__':
     indexer = Spimi(max_ram_usage=max_ram, max_block_size=max_block_size,
                         auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type)
 
-
-    print(
-        f"Start {str(posting_list_type).lower().replace('postingtype.','')} indexing...")
-    
-    start = time.perf_counter()
     tokenizer = Tokenizer(min_token_length, stop_words, language)
     for i, parsed_text in enumerate(texts):
         tokens = tokenizer.tokenize(parsed_text)
         indexer.add_document(doc_id=i, tokens=tokens)
 
     index = indexer.construct_index(OUTPUT_INDEX)
-    end = time.perf_counter()
-    print(
-        f"End file indexing {round((end-start), 3)} seconds with {indexer.block_number} temporary file{'s' if indexer.block_number != 1 else ''}")
 
     print(index.inverted_index)
+
+    print("-------------------------")
+
+    tokenizer = Tokenizer(min_token_length, stop_words, language)
+
+    index = InvertedIndex(None, posting_list_type, 'cache/index/1639591001.3334613.index')
+
+    
+    tokens = tokenizer.tokenize(" ".join(search_terms))
+    matches_light = index.search(tokens, 10)
+    print(f"{matches_light}")
+    

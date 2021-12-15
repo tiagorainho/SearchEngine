@@ -1,11 +1,9 @@
 
-from collections import defaultdict
 from typing import Dict, List, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
-import math
 
-from ranker import Ranker
+from ranker import Ranker, RankingMethod
 
 
 class InvertedIndex:
@@ -26,12 +24,19 @@ class InvertedIndex:
 
     def load_dictionary(self, file_name:str):
         with open(file_name, "r", encoding='utf-8', errors='ignore') as file:
-            term = file.readline().split(self.delimiter, 1)[0]
+            line = file.readline()
+            term_postinglist = line.split(self.delimiter, 1)
+            term = term_postinglist[0]
+
             self.inverted_index[term] = None
 
 
-    def search(self, terms: List[str]) -> List[int]:
-        pass
+    def search(self, terms: List[str], n:int=10, ranking_method:RankingMethod = RankingMethod.TF_IDF) -> List[int]:
+        posting_lists = self.light_search(terms)
+        print(posting_lists)
+        exit(0)
+        return ranking_method.order(terms, posting_lists)[:n]
+
 
 
     def light_search(self, terms: List[str]) -> List[int]:
@@ -62,7 +67,13 @@ class InvertedIndex:
                         min = middle
 
                 if term == line_term:
-                    matches.extend(self.load(line)[1].get_documents())
+                    
+
+                    posting_list = self.posting_list_class.load_index(line).get_documents()
+                    # return parts[0], self.posting_list_class.load_blocks(parts[1])
+                    #matches.extend(
+                    # self.load(line)[1].get_documents())
+                    matches.extend(posting_list)
 
         return matches
 
@@ -104,7 +115,7 @@ class InvertedIndex:
     def save(self, output_file: str) -> None:
         with open(output_file, 'w') as file:
             for term in self.sorted_terms():
-                line = f'{ term }{ self.delimiter }{ self.inverted_index[term].block_repr() }\n'
+                line = f'{ term }{ self.delimiter }{ self.inverted_index[term].write_auxiliar_block() }\n'
                 file.write(line)
 
     def load(self, line: str) -> Tuple[str, PostingList]:
