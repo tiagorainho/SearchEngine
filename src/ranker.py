@@ -36,7 +36,7 @@ class Ranker:
         pass
 
     @staticmethod
-    def order(terms:List[str], posting_list:PostingList) -> List[int]:
+    def order(term_to_posting_list:Dict[str, PostingList]) -> List[int]:
         return []
 
 class TF_IDF_Ranker(Ranker):
@@ -46,17 +46,28 @@ class TF_IDF_Ranker(Ranker):
         self.documents_length = defaultdict(lambda: 0)
     
     @staticmethod
-    def order(terms:List[str], posting_list:PostingList) -> List[int]:
-        results = []
+    def order(term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
         # query
-        
+        query = term_to_posting_list.keys()
 
-        # index
-        for term in terms:
-            pass
+        tfs = dict()
+        for token in query:
+            tfs[token] = 1 + math.log10((sum([1 for t in query if t == token])))
 
-        return results
+        weights = tfs.values()
+        sum_weights = sum([weight*weight for weight in weights])
+        sqrt_weights = math.sqrt(sum_weights)
 
+        scores:DefaultDict[int, float] = defaultdict(float) # doc_id, score
+        for term, tf in tfs.items():
+            posting_list = term_to_posting_list.get(term)
+            if posting_list != None:
+                docs:List[int] = posting_list.get_documents()
+                for doc in docs:
+                    ltc = (tf / sqrt_weights) * posting_list.idf
+                    lnc = posting_list.term_weight[doc]
+                    scores[doc] = ltc * lnc
+        return sorted(scores.items(), key=lambda i: i[1])
     
     def calculate_tf(self, doc_id:int, tokens:List[str]):
         """
@@ -69,9 +80,8 @@ class TF_IDF_Ranker(Ranker):
         term_frequencies = dict()
 
         for token in tokens:
-            tf = len([t for t in tokens if t == token])
+            tf = sum([1 for t in tokens if t == token])
             term_frequencies[token] = self.uniform_tf(tf)
-            
             
         return term_frequencies
     
@@ -85,7 +95,7 @@ class TF_IDF_Ranker(Ranker):
     def calculate_weights(self, tfs):
         return [tf for tf in tfs.values()]
 
-    def calculate_score(self):
+    def calculate_score(self, l1,n1,c1, l2,t2,c2):
         pass
     
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from typing import Dict, FrozenSet, List, Set
+from typing import Dict, List, Set
 from models.posting import PostingType
 
 
@@ -104,7 +104,7 @@ class FrequencyPostingList(PostingList):
         for posting in line.split(' '):
             docid_posting = posting.split('-')
             freq_weight = docid_posting[1].split('/')
-            new_posting_list.posting_list[docid_posting[0]] = freq_weight[0]
+            new_posting_list.posting_list[docid_posting[0]] = float(freq_weight[0]) # verificar se esta bem
 
             new_posting_list.term_weight[docid_posting[0]] = float(freq_weight[1])
         return new_posting_list
@@ -120,7 +120,7 @@ class FrequencyPostingList(PostingList):
             docid_posting = posting.split('-')
             postinglist_weight = docid_posting[1].split('/')
             new_posting_list.posting_list[docid_posting[0]] = postinglist_weight[0]
-            new_posting_list.term_weight[docid_posting[0]] = postinglist_weight[1]
+            new_posting_list.term_weight[docid_posting[0]] = float(postinglist_weight[1])
         return new_posting_list
     
     def write_auxiliar_block(self):

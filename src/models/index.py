@@ -19,27 +19,39 @@ class InvertedIndex:
         self.posting_list_class = PostingListFactory(posting_type)
         self.file = output_path
         if inverted_index == None and output_path != None:
-            self.load_dictionary(output_path)
-            
+            self.load_dictionary(output_path)            
 
     def load_dictionary(self, file_name:str):
         with open(file_name, "r", encoding='utf-8', errors='ignore') as file:
-            line = file.readline()
-            term_postinglist = line.split(self.delimiter, 1)
-            term = term_postinglist[0]
-
-            self.inverted_index[term] = None
-
-
-    def search(self, terms: List[str], n:int=10, ranking_method:RankingMethod = RankingMethod.TF_IDF) -> List[int]:
-        posting_lists = self.light_search(terms)
-        return RankerFactory(ranking_method).order(terms, posting_lists)[:n]
+            lines = file.readlines()
+            for line in lines:
+                term_postinglist = line.split(self.delimiter, 1)
+                term = term_postinglist[0]
+                self.inverted_index[term] = None
 
 
+    def search(self, terms: List[str], n:int, ranking_method:RankingMethod = RankingMethod.TF_IDF) -> List[int]:
+        term_to_posting_lists = self.light_search(terms)
+        return RankerFactory(ranking_method).order(term_to_posting_lists)[:n]
 
-    def light_search(self, terms: List[str]) -> List[PostingList]:
-        matches = []
 
+    def light_search(self, terms: List[str]) -> Dict[str, PostingList]:
+        matches = {term:None for term in terms}
+        for term in terms:
+            if term in self.inverted_index:
+                posting_list:PostingList = self.inverted_index.get(term)
+                # add posting list that is already found in memory
+                if posting_list != None:
+                    matches[term] = posting_list
+                    terms.remove(term)
+            else:
+                # this term does not appear in the dictionary
+                terms.remove(term)
+
+        # early return if there is no more terms to search
+        if len(terms) == 0: return matches
+
+        # fetch the terms that are in the index file but not in memory and store them
         with open(self.file, "r", encoding='utf-8', errors='ignore') as file:
             
             file.seek(0, 2)
@@ -66,7 +78,8 @@ class InvertedIndex:
 
                 if term == line_term:
                     posting_list = self.posting_list_class.load_index(line)
-                    matches.append(posting_list)
+                    matches[term] = posting_list
+                    self.inverted_index[term] = posting_list
 
         return matches
 
