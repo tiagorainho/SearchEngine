@@ -2,8 +2,7 @@
 from typing import Dict, List, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
-
-from ranker import Ranker, RankerFactory, RankingMethod
+from ranker import Ranker, RankerFactory
 
 
 class InvertedIndex:
@@ -29,8 +28,8 @@ class InvertedIndex:
                 term = term_postinglist[0]
                 self.inverted_index[term] = None
 
-
-    def search(self, terms: List[str], n:int, ranking_method:RankingMethod = RankingMethod.TF_IDF) -> List[int]:
+    
+    def search(self, terms: List[str], n:int, ranking_method) -> List[int]:
         term_to_posting_lists = self.light_search(terms)
         return RankerFactory(ranking_method).order(term_to_posting_lists)[:n]
 
@@ -86,7 +85,7 @@ class InvertedIndex:
     def clear(self):
         self.inverted_index.clear()
 
-    def add_tokens(self, tokens: List[str], doc_id: int, ranker:Ranker) -> None:
+    def add_tokens(self, tokens: List[str], doc_id: int) -> None:
         """
         Adds the document id and position to the Postings list of the respective token
 
@@ -95,16 +94,11 @@ class InvertedIndex:
         :param position: position of the token in the respective document id
         :return: None
         """
-
-        tfs = ranker.calculate_tf(doc_id, tokens)
-        weights =  ranker.uniform_weight(tfs)
-
         for position, token in enumerate(tokens):
             posting_list:PostingList = self.inverted_index.get(token)
 
             if posting_list == None:
                 posting_list = self.posting_list_class()
-                posting_list.term_weight[doc_id] = weights[token]
                 self.inverted_index[token] = posting_list
 
             posting_list.add(doc_id, position)
@@ -118,10 +112,16 @@ class InvertedIndex:
         """
         return sorted(list(self.inverted_index.keys()))
 
-    def save(self, output_file: str) -> None:
+    def save(self, output_file: str, ranker:Ranker=None) -> None:
+        line_parser = lambda term: f'{ term }{ self.delimiter }{ self.inverted_index[term] }\n'
+        if ranker != None:
+            line_parser = lambda term: f'{ term }{ self.delimiter }{ ranker.document_repr(self.inverted_index[term]) }\n'
+
         with open(output_file, 'w') as file:
             for term in self.sorted_terms():
-                line = f'{ term }{ self.delimiter }{ self.inverted_index[term].write_auxiliar_block() }\n'
+                #print(self.inverted_index[term].__dict__['term_weight'])
+                #exit(0)
+                line = line_parser(term)
                 file.write(line)
 
     def load(self, line: str) -> Tuple[str, PostingList]:

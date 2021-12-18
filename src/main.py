@@ -3,6 +3,7 @@ from models.index import InvertedIndex
 from models.posting import PostingType
 import time
 from parser import Parser
+from ranker import RankingMethod
 from tokenizer import Tokenizer
 from argparse import ArgumentParser
 
@@ -153,7 +154,7 @@ if __name__ == '__main__':
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
 
-    """
+    
     indexer = Spimi(max_ram_usage=max_ram, max_block_size=max_block_size,
                         auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type)
 
@@ -168,7 +169,7 @@ if __name__ == '__main__':
 
     indexer.clear_blocks()
 
-    """
+    
 
     print("------------ Search -------------")
 
@@ -179,7 +180,7 @@ if __name__ == '__main__':
 
     tokenizer = Tokenizer(min_token_length, stop_words, language)
     tokens = tokenizer.tokenize(search_terms)
-    matches_light = index.search(tokens, 10)
+    matches_light = index.search(tokens, 10, RankingMethod.TF_IDF)
     print(f"result: {matches_light}")
 
     print("index: ", index.inverted_index)

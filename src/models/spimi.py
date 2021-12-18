@@ -23,6 +23,7 @@ class Spimi():
     inverted_index: InvertedIndex
     posting_list_class: PostingList
     posting_type: PostingType
+    ranker: Ranker
     ram_usage: float
     can_update_ram: threading.Event
     document_done: threading.Event
@@ -40,8 +41,6 @@ class Spimi():
         self.inverted_index = InvertedIndex(dict(), posting_type)
         self.posting_type = posting_type
         self.posting_list_class = PostingListFactory(posting_type)
-        self.documents_length = defaultdict(int)
-        
         self.ranker = RankerFactory(ranker_type)()
 
         self.ram_usage = self.get_ram_usage()
@@ -53,7 +52,6 @@ class Spimi():
         thread.start()
         
          
-
     def get_ram_usage(self):
         return psutil.virtual_memory().percent
 
@@ -73,7 +71,11 @@ class Spimi():
         :return: None
         """
         self.can_update_ram.set()
-        self.inverted_index.add_tokens(tokens, doc_id, self.ranker)
+
+        #self.ranker.before_add_tokens(self.inverted_index.posting_list, tokens, doc_id)
+        self.inverted_index.add_tokens(tokens, doc_id)
+        self.ranker.after_add_tokens(self.inverted_index.inverted_index, tokens, doc_id)
+
         self.can_update_ram.clear()
         self.document_done.wait()
 
@@ -97,7 +99,7 @@ class Spimi():
         :param output_file: file to write the index
         :return: None
         """
-        self.inverted_index.save(Path(output_path).resolve())
+        self.inverted_index.save(Path(output_path).resolve(), self.ranker)
         self.block_number += 1
 
     def get_lines_from_block(self, file: FileIO) -> List[str]:
@@ -209,8 +211,7 @@ class Spimi():
         with open(Path(output_path).resolve(), 'w') as output_file:
             # get mininum terms and their respective posting list
             for term, posting_list in min_term_generator:
-                idf = self.ranker.calculate_idf(posting_list)
-                output_file.write(f"{term} {posting_list.write_auxiliar_block()}#{idf}\n")
+                output_file.write(f"{term} {self.ranker.term_repr(posting_list)}\n")
                 index[term] = posting_list # None    # DEIXAR NONE -------------------------------------------------------------------------------------------------------------------
 
         return InvertedIndex(index, self.posting_type, output_path)

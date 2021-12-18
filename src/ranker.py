@@ -43,11 +43,10 @@ class TF_IDF_Ranker(Ranker):
     documents_length: DefaultDict
 
     def __init__(self):
-        self.documents_length = defaultdict(lambda: 0)
+        self.documents_length = defaultdict(int)
     
     @staticmethod
     def order(term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
-        # query
         query = term_to_posting_list.keys()
 
         tfs = dict()
@@ -64,11 +63,27 @@ class TF_IDF_Ranker(Ranker):
             if posting_list != None:
                 docs:List[int] = posting_list.get_documents()
                 for doc in docs:
+                    # query
                     ltc = (tf / sqrt_weights) * posting_list.idf
+                    # documents
                     lnc = posting_list.term_weight[doc]
+
                     scores[doc] = ltc * lnc
-                    
+
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
+    
+    def document_repr(self, posting_list:PostingList):
+        return ' '.join([f'{doc_id}-{freq}/{round(posting_list.term_weight[doc_id], 3)}' for doc_id, freq in posting_list.posting_list.items()])
+
+    def term_repr(self, posting_list:PostingList):
+        idf = self.calculate_idf(posting_list)
+        return f'{self.document_repr(posting_list)}#{idf}'
+
+    def after_add_tokens(self, term_to_postinglist: Dict[str, PostingList], tokens:List[str], doc_id:int):
+        tfs = self.calculate_tf(doc_id, tokens)
+        weights =  self.uniform_weight(tfs)
+        for token in tokens:
+            term_to_postinglist[token].term_weight[doc_id] = weights[token]
     
     def calculate_tf(self, doc_id:int, tokens:List[str]):
         """

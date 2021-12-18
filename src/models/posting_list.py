@@ -104,7 +104,7 @@ class FrequencyPostingList(PostingList):
         for posting in line.split(' '):
             docid_posting = posting.split('-')
             freq_weight = docid_posting[1].split('/')
-            new_posting_list.posting_list[docid_posting[0]] = float(freq_weight[0]) # verificar se esta bem
+            new_posting_list.posting_list[docid_posting[0]] = int(freq_weight[0])
 
             new_posting_list.term_weight[docid_posting[0]] = float(freq_weight[1])
         return new_posting_list
@@ -122,10 +122,7 @@ class FrequencyPostingList(PostingList):
             new_posting_list.posting_list[docid_posting[0]] = postinglist_weight[0]
             new_posting_list.term_weight[docid_posting[0]] = float(postinglist_weight[1])
         return new_posting_list
-    
-    def write_auxiliar_block(self):
-        return ' '.join([f'{doc_id}-{freq}/{round(self.term_weight[doc_id], 3)}' for doc_id, freq in self.posting_list.items()])
-
+ 
     def __repr__(self):
         return ' '.join([f'{doc_id}-{freq}' for doc_id, freq in self.posting_list.items()])
 
