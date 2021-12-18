@@ -147,8 +147,8 @@ if __name__ == '__main__':
     stop_words = 'stop_words.txt'
     min_token_length = 0
     language = None
-    texts = ['ola bem bem, curto bue de escrever ola', " e tu? ta bem td fixe oi oi ola cnt"]
-    search_terms = ["escrever", "outro"]
+    texts = ['ola bem bem, curto bue de escrever ola', " e tu? ta bem td fixe oi oi ola cnt", "kkk oi haha oafahfai fuah ahfa hauf uawfh a"]
+    search_terms = "oi ola tudo kkk"
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
@@ -165,16 +165,20 @@ if __name__ == '__main__':
     index = indexer.construct_index(OUTPUT_INDEX)
 
     print(index.inverted_index)
+
+    indexer.clear_blocks()
+
     """
+
     print("------------ Search -------------")
 
 
-    index = InvertedIndex(None, posting_list_type, 'cache/index/1639696272.432446.index')
+    index = InvertedIndex(None, posting_list_type, 'cache/index/1639768739.72221.index')
     print("retrieved index: ", index.inverted_index)
     print()
 
     tokenizer = Tokenizer(min_token_length, stop_words, language)
-    tokens = tokenizer.tokenize(" ".join(search_terms))
+    tokens = tokenizer.tokenize(search_terms)
     matches_light = index.search(tokens, 10)
     print(f"result: {matches_light}")
 

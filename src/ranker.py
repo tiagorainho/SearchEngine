@@ -67,7 +67,8 @@ class TF_IDF_Ranker(Ranker):
                     ltc = (tf / sqrt_weights) * posting_list.idf
                     lnc = posting_list.term_weight[doc]
                     scores[doc] = ltc * lnc
-        return sorted(scores.items(), key=lambda i: i[1])
+                    
+        return sorted(scores.items(), key=lambda i: i[1], reverse=True)
     
     def calculate_tf(self, doc_id:int, tokens:List[str]):
         """
