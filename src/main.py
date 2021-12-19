@@ -3,7 +3,7 @@ from models.index import InvertedIndex
 from models.posting import PostingType
 import time
 from parser import Parser
-from ranker import RankingMethod
+from ranker import RankerFactory, RankingMethod
 from tokenizer import Tokenizer
 from argparse import ArgumentParser
 
@@ -142,8 +142,6 @@ class Main:
 
 if __name__ == '__main__':
     # Main().main()
-
-
     
     stop_words = 'stop_words.txt'
     min_token_length = 0
@@ -153,10 +151,15 @@ if __name__ == '__main__':
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
+    ranking_method = RankingMethod.TF_IDF
+    ranker = RankerFactory(ranking_method)(posting_list_type)
 
     
+    print("------------ Indexing -------------")
+
+    t1 = time.perf_counter()
     indexer = Spimi(max_ram_usage=max_ram, max_block_size=max_block_size,
-                        auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type)
+                        auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type, ranking_method=RankingMethod.TF_IDF)
 
     tokenizer = Tokenizer(min_token_length, stop_words, language)
     for i, parsed_text in enumerate(texts):
@@ -165,24 +168,30 @@ if __name__ == '__main__':
 
     index = indexer.construct_index(OUTPUT_INDEX)
 
+    t2 = time.perf_counter()
     print(index.inverted_index)
 
     indexer.clear_blocks()
 
+
+    print(f'whole indexing took: {t2-t1} seconds')
     
 
-    print("------------ Search -------------")
+    print("\n------------ Searching -------------")
 
-
-    index = InvertedIndex(None, posting_list_type, 'cache/index/1639768739.72221.index')
+    t1 = time.perf_counter()
+    index = InvertedIndex(None, posting_list_type, 'cache/index/1639915619.996175.index')
     print("retrieved index: ", index.inverted_index)
     print()
 
     tokenizer = Tokenizer(min_token_length, stop_words, language)
     tokens = tokenizer.tokenize(search_terms)
-    matches_light = index.search(tokens, 10, RankingMethod.TF_IDF)
-    print(f"result: {matches_light}")
-
+    matches = index.search(tokens, 10, ranker, show_score=True)
+    t2 = time.perf_counter()
+    print(f'whole searching took: {t2-t1} seconds')
+    print()
+    print(f"result: {matches}")
+    print()
     print("index: ", index.inverted_index)
 
     

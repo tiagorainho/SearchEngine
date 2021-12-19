@@ -1,8 +1,9 @@
 
+from types import FunctionType
 from typing import Dict, List, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
-from ranker import Ranker, RankerFactory
+from ranker import Ranker
 
 
 class InvertedIndex:
@@ -29,12 +30,15 @@ class InvertedIndex:
                 self.inverted_index[term] = None
 
     
-    def search(self, terms: List[str], n:int, ranking_method) -> List[int]:
-        term_to_posting_lists = self.light_search(terms)
-        return RankerFactory(ranking_method).order(term_to_posting_lists)[:n]
+    def search(self, terms: List[str], n:int, ranker:Ranker, show_score:bool=False) -> List[int] or List[Tuple[int, float]]:
+        term_to_posting_lists = self.light_search(terms, ranker.load_posting_list)
+        results = ranker.order(term_to_posting_lists)[:n]
+        if not show_score:
+            results = [tpl[0] for tpl in results]
+        return results
 
 
-    def light_search(self, terms: List[str]) -> Dict[str, PostingList]:
+    def light_search(self, terms: List[str], load_posting_list_func:FunctionType) -> Dict[str, PostingList]:
         matches = {term:None for term in terms}
         for term in terms:
             if term in self.inverted_index:
@@ -68,7 +72,7 @@ class InvertedIndex:
                     file.seek(middle)
                     file.readline()
                     line = file.readline()
-                    line_term = line.split(self.delimiter)[0]
+                    line_term, line_posting_list = line.split(self.delimiter, 1)
 
                     if term < line_term:
                         max = middle
@@ -76,7 +80,7 @@ class InvertedIndex:
                         min = middle
 
                 if term == line_term:
-                    posting_list = self.posting_list_class.load_index(line)
+                    posting_list = load_posting_list_func(line_posting_list)
                     matches[term] = posting_list
                     self.inverted_index[term] = posting_list
 
@@ -119,12 +123,10 @@ class InvertedIndex:
 
         with open(output_file, 'w') as file:
             for term in self.sorted_terms():
-                #print(self.inverted_index[term].__dict__['term_weight'])
-                #exit(0)
                 line = line_parser(term)
                 file.write(line)
 
-    def load(self, line: str) -> Tuple[str, PostingList]:
+    def load(self, line: str, ranker) -> Tuple[str, PostingList]:
         """"
         parts = line.split(self.delimiter, 1)
         posting_list_parts = parts[1].split('/')
@@ -132,8 +134,8 @@ class InvertedIndex:
         posting_list.term_weight = posting_list_parts[1]
         return parts[0], posting_list
         """
-        parts = line.split(self.delimiter, 1)
-        return parts[0], self.posting_list_class.load_blocks(parts[1])
+        term, posting_list_str = tuple(line.split(self.delimiter, 1))
+        return term, ranker.load_posting_list(posting_list_str)
 
     def __repr__(self):
         repr = ''

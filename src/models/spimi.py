@@ -1,18 +1,15 @@
 from io import FileIO
-from typing import DefaultDict, Dict, Generator, List, Tuple
+from typing import Dict, Generator, List, Tuple
 from models.index import InvertedIndex
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
-from collections import defaultdict
+from ranker import Ranker, RankerFactory, RankingMethod
 from pathlib import Path
 import threading
 import psutil
 import heapq
 import os
 import glob
-import math
-
-from ranker import Ranker, RankerFactory, RankingMethod
 
 class Spimi():
     AUXILIARY_DIR: str
@@ -28,7 +25,7 @@ class Spimi():
     can_update_ram: threading.Event
     document_done: threading.Event
 
-    def __init__(self, max_ram_usage: int = 85, max_block_size: int = 10000, auxiliary_dir: str = 'cache/blocks', posting_type: PostingType = PostingType.FREQUENCY, ranker_type:RankingMethod=RankingMethod.TF_IDF) -> None:
+    def __init__(self, max_ram_usage: int = 85, max_block_size: int = 10000, auxiliary_dir: str = 'cache/blocks', posting_type: PostingType = PostingType.FREQUENCY, ranking_method:RankingMethod=RankingMethod.TF_IDF) -> None:
         """
         Creates a new instance of a SPIMI indexer, this is used to create indexes and initialize static variables
 
@@ -41,7 +38,7 @@ class Spimi():
         self.inverted_index = InvertedIndex(dict(), posting_type)
         self.posting_type = posting_type
         self.posting_list_class = PostingListFactory(posting_type)
-        self.ranker = RankerFactory(ranker_type)()
+        self.ranker = RankerFactory(ranking_method)(posting_type)
 
         self.ram_usage = self.get_ram_usage()
         self.can_update_ram = threading.Event()
@@ -72,7 +69,7 @@ class Spimi():
         """
         self.can_update_ram.set()
 
-        #self.ranker.before_add_tokens(self.inverted_index.posting_list, tokens, doc_id)
+        self.ranker.before_add_tokens(self.inverted_index.inverted_index, tokens, doc_id)
         self.inverted_index.add_tokens(tokens, doc_id)
         self.ranker.after_add_tokens(self.inverted_index.inverted_index, tokens, doc_id)
 
@@ -118,7 +115,7 @@ class Spimi():
         :param line: line to be parsed
         :return: Tuple of term and PostingList
         """
-        return self.inverted_index.load(line)
+        return self.inverted_index.load(line, self.ranker)
 
     def file_generator(self, file: str) -> Generator[List[str], None, None]:
         """

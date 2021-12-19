@@ -1,5 +1,4 @@
 from __future__ import annotations
-from collections import defaultdict
 from typing import Dict, List, Set
 from models.posting import PostingType
 
@@ -17,11 +16,7 @@ class PostingList:
         pass
 
     @staticmethod
-    def load_blocks(line:str)->PostingList:
-        pass
-
-    @staticmethod
-    def load_index(line:str)->PostingList:
+    def load(line:str)->PostingList:
         pass
 
     @staticmethod
@@ -66,13 +61,10 @@ class BooleanPostingList(PostingList):
 
 class FrequencyPostingList(PostingList):
     posting_list: Dict[int, int]
-    term_weight : Dict[int, float]
 
     def __init__(self):
         super().__init__(PostingType.FREQUENCY)
         self.posting_list = dict()
-        self.term_weight = defaultdict(int)
-
 
     def add(self, doc_id:int, position:int=None):
         freq = self.posting_list.get(doc_id)
@@ -98,29 +90,11 @@ class FrequencyPostingList(PostingList):
         return new_posting_list
 
     @staticmethod
-    def load_blocks(line) -> FrequencyPostingList:
+    def load(line:str)->PostingList:
         new_posting_list = FrequencyPostingList()
-        new_posting_list.term_weight = dict()
         for posting in line.split(' '):
-            docid_posting = posting.split('-')
-            freq_weight = docid_posting[1].split('/')
-            new_posting_list.posting_list[docid_posting[0]] = int(freq_weight[0])
-
-            new_posting_list.term_weight[docid_posting[0]] = float(freq_weight[1])
-        return new_posting_list
-    
-    @staticmethod
-    def load_index(line:str)->PostingList:
-        new_posting_list = FrequencyPostingList()
-
-        postinglist_idf = line.split('#')
-        new_posting_list.idf = float(postinglist_idf[1])
-
-        for posting in postinglist_idf[0].split(' ')[1:]:
-            docid_posting = posting.split('-')
-            postinglist_weight = docid_posting[1].split('/')
-            new_posting_list.posting_list[docid_posting[0]] = postinglist_weight[0]
-            new_posting_list.term_weight[docid_posting[0]] = float(postinglist_weight[1])
+            docid_freq = posting.split('-')
+            new_posting_list[docid_freq[0]] = docid_freq[1]
         return new_posting_list
  
     def __repr__(self):
