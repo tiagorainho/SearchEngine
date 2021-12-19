@@ -3,6 +3,7 @@ from typing import Dict, Generator, List, Tuple
 from models.index import InvertedIndex
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
+from ranker import Ranker, RankerFactory, RankingMethod
 from pathlib import Path
 import threading
 import psutil
@@ -10,22 +11,21 @@ import heapq
 import os
 import glob
 
-
 class Spimi():
     AUXILIARY_DIR: str
     BLOCK_SUFFIX: str = 'block'
     MAX_BLOCK_SIZE: int
     MAX_RAM_USAGE: int
-    MAX_USAGE_BLOCK: int
     block_number: int
     inverted_index: InvertedIndex
     posting_list_class: PostingList
     posting_type: PostingType
+    ranker: Ranker
     ram_usage: float
     can_update_ram: threading.Event
     document_done: threading.Event
 
-    def __init__(self, max_ram_usage: int = 85, max_block_size: int = 10000, auxiliary_dir: str = 'cache/blocks', posting_type: PostingType = PostingType.FREQUENCY) -> None:
+    def __init__(self, max_ram_usage: int = 85, max_block_size: int = 10000, auxiliary_dir: str = 'cache/blocks', posting_type: PostingType = PostingType.FREQUENCY, ranking_method:RankingMethod=RankingMethod.TF_IDF) -> None:
         """
         Creates a new instance of a SPIMI indexer, this is used to create indexes and initialize static variables
 
@@ -34,11 +34,12 @@ class Spimi():
         self.MAX_BLOCK_SIZE = max_block_size
         self.MAX_RAM_USAGE = max_ram_usage
         self.AUXILIARY_DIR = auxiliary_dir
-        self.MAX_USAGE_BLOCK = 3
         self.block_number = 0
         self.inverted_index = InvertedIndex(dict(), posting_type)
         self.posting_type = posting_type
         self.posting_list_class = PostingListFactory(posting_type)
+        self.ranker = RankerFactory(ranking_method)(posting_type)
+
         self.ram_usage = self.get_ram_usage()
         self.can_update_ram = threading.Event()
         self.document_done = threading.Event()
@@ -46,8 +47,8 @@ class Spimi():
         self.can_update_ram.set()
         thread = threading.Thread(target=self.update_ram, daemon=True)
         thread.start()
+        
          
-
     def get_ram_usage(self):
         return psutil.virtual_memory().percent
 
@@ -67,13 +68,17 @@ class Spimi():
         :return: None
         """
         self.can_update_ram.set()
-        for position, token in enumerate(tokens):
-            if(self.ram_usage >= self.MAX_RAM_USAGE or self._inverted_index_size >= self.MAX_BLOCK_SIZE):
-                self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
-                self.inverted_index.clear()
-            self.inverted_index.add_token(token, doc_id, position)
+
+        self.ranker.before_add_tokens(self.inverted_index.inverted_index, tokens, doc_id)
+        self.inverted_index.add_tokens(tokens, doc_id)
+        self.ranker.after_add_tokens(self.inverted_index.inverted_index, tokens, doc_id)
+
         self.can_update_ram.clear()
         self.document_done.wait()
+
+        if(self._inverted_index_size >= self.MAX_BLOCK_SIZE or self.ram_usage >= self.MAX_RAM_USAGE):
+            self._write_block_to_disk(f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
+            self.inverted_index.clear()
 
     @property
     def _inverted_index_size(self) -> int:
@@ -86,12 +91,12 @@ class Spimi():
 
     def _write_block_to_disk(self, output_path: str) -> None:
         """
-        Write an inverted index to a given file based on the
+        Write an inverted index to a given file
 
         :param output_file: file to write the index
         :return: None
         """
-        self.inverted_index.save(Path(output_path).resolve())
+        self.inverted_index.save(Path(output_path).resolve(), self.ranker)
         self.block_number += 1
 
     def get_lines_from_block(self, file: FileIO) -> List[str]:
@@ -110,7 +115,7 @@ class Spimi():
         :param line: line to be parsed
         :return: Tuple of term and PostingList
         """
-        return self.inverted_index.load(line)
+        return self.inverted_index.load(line, self.ranker)
 
     def file_generator(self, file: str) -> Generator[List[str], None, None]:
         """
@@ -203,8 +208,8 @@ class Spimi():
         with open(Path(output_path).resolve(), 'w') as output_file:
             # get mininum terms and their respective posting list
             for term, posting_list in min_term_generator:
-                output_file.write(f"{term} {posting_list}\n")
-                index[term] = None
+                output_file.write(f"{term} {self.ranker.term_repr(posting_list)}\n")
+                index[term] = posting_list # None    # DEIXAR NONE -------------------------------------------------------------------------------------------------------------------
 
         return InvertedIndex(index, self.posting_type, output_path)
 

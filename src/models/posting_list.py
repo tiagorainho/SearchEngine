@@ -23,6 +23,8 @@ class PostingList:
     def merge(posting_lists:List[PostingList])->PostingList:
         pass
 
+    def block_repr(self):
+        pass
 
 class BooleanPostingList(PostingList):
 
@@ -57,9 +59,7 @@ class BooleanPostingList(PostingList):
         return ' '.join([str(posting) for posting in self.posting_list])
 
 
-
 class FrequencyPostingList(PostingList):
-
     posting_list: Dict[int, int]
 
     def __init__(self):
@@ -70,9 +70,11 @@ class FrequencyPostingList(PostingList):
         freq = self.posting_list.get(doc_id)
         if freq == None: self.posting_list[doc_id] = 1
         else: self.posting_list[doc_id] = freq + 1
-    
+        
+
     def get_documents(self) -> List[int]:
         return list(self.posting_list.keys())
+        
 
     @staticmethod
     def merge(posting_lists:List[FrequencyPostingList]) -> FrequencyPostingList:
@@ -88,16 +90,15 @@ class FrequencyPostingList(PostingList):
         return new_posting_list
 
     @staticmethod
-    def load(line) -> FrequencyPostingList:
+    def load(line:str)->PostingList:
         new_posting_list = FrequencyPostingList()
         for posting in line.split(' '):
-            parts = posting.split('-')
-            new_posting_list.posting_list[parts[0]] = parts[1]
+            docid_freq = posting.split('-')
+            new_posting_list[docid_freq[0]] = docid_freq[1]
         return new_posting_list
-    
+ 
     def __repr__(self):
         return ' '.join([f'{doc_id}-{freq}' for doc_id, freq in self.posting_list.items()])
-
 
 
 class PositionalPostingList(PostingList):
