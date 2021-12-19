@@ -13,9 +13,12 @@ class RankingMethod(Enum):
 
 
 class Ranker:
+    allowed_posting_types:List[PostingType]
 
-    def __init__(self):
-        pass
+
+    def __init__(self, posting_type:PostingType):
+        if posting_type not in self.allowed_posting_types:
+            raise Exception(f'{ posting_type } not supported for {self.__class__}')
 
     def before_add_tokens(self, term_to_postinglist: Dict[str, PostingList], tokens:List[str], doc_id:int):
         pass
@@ -48,8 +51,7 @@ class TF_IDF_Ranker(Ranker):
     """
 
     def __init__(self, posting_type:PostingType):
-        if posting_type not in self.allowed_posting_types:
-            raise Exception(f'{ posting_type } not supported for {self.__class__}')
+        super().__init__(posting_type)
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
     
