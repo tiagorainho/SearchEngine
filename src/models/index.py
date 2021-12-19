@@ -28,11 +28,10 @@ class InvertedIndex:
                 term_postinglist = line.split(self.delimiter, 1)
                 term = term_postinglist[0]
                 self.inverted_index[term] = None
-
     
     def search(self, terms: List[str], n:int, ranker:Ranker, show_score:bool=False) -> List[int] or List[Tuple[int, float]]:
         term_to_posting_lists = self.light_search(terms, ranker.load_posting_list)
-        results = ranker.order(term_to_posting_lists)[:n]
+        results = ranker.__class__.order(term_to_posting_lists)[:n]
         if not show_score:
             results = [tpl[0] for tpl in results]
         return results

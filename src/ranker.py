@@ -35,6 +35,7 @@ class Ranker:
     def load_posting_list(posting_list_class:PostingList.__class__, line:str) -> PostingList:
         pass
 
+    @staticmethod
     def order(term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
         pass
 
@@ -55,7 +56,8 @@ class TF_IDF_Ranker(Ranker):
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
     
-    def order(self, term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
+    @staticmethod
+    def order(term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
         query = term_to_posting_list.keys()
 
         tfs = dict()
