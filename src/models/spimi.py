@@ -10,6 +10,7 @@ import psutil
 import heapq
 import os
 import glob
+import json
 
 class Spimi():
     AUXILIARY_DIR: str
@@ -21,6 +22,7 @@ class Spimi():
     posting_list_class: PostingList
     posting_type: PostingType
     ranker: Ranker
+    metadata: Dict[str, object]
     ram_usage: float
     can_update_ram: threading.Event
     document_done: threading.Event
@@ -31,6 +33,7 @@ class Spimi():
 
         :return: None
         """
+        self.metadata = dict()
         self.MAX_BLOCK_SIZE = max_block_size
         self.MAX_RAM_USAGE = max_ram_usage
         self.AUXILIARY_DIR = auxiliary_dir
@@ -38,7 +41,8 @@ class Spimi():
         self.inverted_index = InvertedIndex(dict(), posting_type)
         self.posting_type = posting_type
         self.posting_list_class = PostingListFactory(posting_type)
-        self.ranker = RankerFactory(ranking_method)(posting_type)
+        self.ranker:Ranker = RankerFactory(ranking_method)(posting_type)
+        self.extend_metadata(self.ranker.metadata())
 
         self.ram_usage = self.get_ram_usage()
         self.can_update_ram = threading.Event()
@@ -47,8 +51,15 @@ class Spimi():
         self.can_update_ram.set()
         thread = threading.Thread(target=self.update_ram, daemon=True)
         thread.start()
-        
-         
+
+
+    
+    def extend_metadata(self, dictionary: Dict[str, object]):
+        for key, value in dictionary.items():
+            if key in self.metadata:
+                raise Exception(f'"{key}" already exists in the metadata')
+            self.metadata[key] = value
+
     def get_ram_usage(self):
         return psutil.virtual_memory().percent
 
@@ -205,7 +216,7 @@ class Spimi():
         min_term_generator = self.min_k_merge_generator(input_paths)
         index: Dict[str, None] = dict()
 
-        with open(Path(output_path).resolve(), 'w') as output_file:
+        with open(Path(output_path).resolve(), 'a') as output_file:
             # get mininum terms and their respective posting list
             for term, posting_list in min_term_generator:
                 output_file.write(f"{term} {self.ranker.term_repr(posting_list)}\n")
@@ -225,12 +236,18 @@ class Spimi():
             self._write_block_to_disk(
                 f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
 
+        # save metadata
+        self.inverted_index.save_data(Path(ouput_path).resolve(), self.metadata)
+
         # get all files from the postings directory
-        block_paths = Path("cache/blocks").rglob(f"*{self.BLOCK_SUFFIX}")
+        block_paths = Path(self.AUXILIARY_DIR).rglob(f"*{self.BLOCK_SUFFIX}")
         input_paths = [Path(file).resolve() for file in block_paths]
 
         # merge those blocks into one file
         index = self._merge_blocks(input_paths, ouput_path)
+
+        # save pos-processing
+        self.inverted_index.save_data(Path(ouput_path).resolve(), self.ranker.pos_processing())
 
         return index
 

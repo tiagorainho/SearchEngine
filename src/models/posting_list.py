@@ -27,7 +27,6 @@ class PostingList:
         pass
 
 class BooleanPostingList(PostingList):
-
     posting_list: Set[int]
 
     def __init__(self):

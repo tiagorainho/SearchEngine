@@ -15,10 +15,21 @@ class RankingMethod(Enum):
 class Ranker:
     allowed_posting_types:List[PostingType]
 
-
     def __init__(self, posting_type:PostingType):
         if posting_type not in self.allowed_posting_types:
             raise Exception(f'{ posting_type } not supported for {self.__class__}')
+    
+    def load_metadata(self, metadata: Dict[str, str]):
+        # check if is the same ranker, posting list, etc
+        if self.metadata['ranker'] != 'TF_IDF':
+            raise Exception(f'Ranker "{ self.metadata["ranker"] }" not compatible')
+        self.metadata = metadata
+    
+    def metadata(self) -> Dict[str, object]:
+        pass
+
+    def pos_processing(self) -> Dict[str, object]:
+        pass
 
     def before_add_tokens(self, term_to_postinglist: Dict[str, PostingList], tokens:List[str], doc_id:int):
         pass
@@ -35,8 +46,7 @@ class Ranker:
     def load_posting_list(posting_list_class:PostingList.__class__, line:str) -> PostingList:
         pass
 
-    @staticmethod
-    def order(term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
+    def order(self, term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
         pass
 
 
@@ -48,7 +58,7 @@ class TF_IDF_Ranker(Ranker):
 
     """
     added attributes to PostingList:
-        - posting_list.term_weight : Dict[int, float]
+        - posting_list.tf_weight : Dict[int, float]
     """
 
     def __init__(self, posting_type:PostingType):
@@ -56,8 +66,24 @@ class TF_IDF_Ranker(Ranker):
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
     
-    @staticmethod
-    def order(term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
+    def load_metadata(self, metadata: Dict[str, str]):
+        # check if is the same ranker, posting list, etc
+        if metadata['ranker'] != 'TF_IDF':
+            raise Exception(f'Ranker "{ metadata["ranker"] }" not compatible')
+        self.metadata = metadata
+
+    def metadata(self) -> Dict[str, object]:
+        return {
+            'ranker': 'TF_IDF',
+            'posting_class': 'frequency'
+        }
+    
+    def pos_processing(self) -> Dict[str, object]:
+        return {
+            'some_key': 'some_value'
+        }
+    
+    def order(self, term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
         query = term_to_posting_list.keys()
 
         tfs = dict()
@@ -77,14 +103,14 @@ class TF_IDF_Ranker(Ranker):
                     # query
                     ltc = (tf / sqrt_weights) * posting_list.idf
                     # documents
-                    lnc = posting_list.term_weight[doc]
+                    lnc = posting_list.tf_weight[doc]
 
                     scores[doc] = ltc * lnc
 
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
     
     def document_repr(self, posting_list:PostingList):
-        return ' '.join([f'{doc_id}-{freq}/{round(posting_list.term_weight[doc_id], 3)}' for doc_id, freq in posting_list.posting_list.items()])
+        return ' '.join([f'{doc_id}-{freq}/{round(posting_list.tf_weight[doc_id], 3)}' for doc_id, freq in posting_list.posting_list.items()])
 
     def term_repr(self, posting_list:PostingList):
         idf = self.calculate_idf(posting_list)
@@ -92,7 +118,7 @@ class TF_IDF_Ranker(Ranker):
     
     @staticmethod
     def posting_list_init(posting_list:PostingList):
-        posting_list.term_weight = defaultdict(int)
+        posting_list.tf_weight = defaultdict(int)
     
     def load_posting_list(self, line:str) -> PostingList:
 
@@ -109,7 +135,7 @@ class TF_IDF_Ranker(Ranker):
             posting_str, weight = tuple(posting.split('/'))
             doc_id, freq = tuple(posting_str.split('-'))
             posting_list.posting_list[doc_id] = int(freq)
-            posting_list.term_weight[doc_id] = float(weight)
+            posting_list.tf_weight[doc_id] = float(weight)
 
         return posting_list
 
@@ -118,9 +144,9 @@ class TF_IDF_Ranker(Ranker):
         weights =  TF_IDF_Ranker.uniform_weight(tfs)
         for token in tokens:
             posting_list:PostingList = term_to_postinglist[token]
-            if 'term_weight' not in posting_list.__dict__:
+            if 'tf_weight' not in posting_list.__dict__:
                 TF_IDF_Ranker.posting_list_init(posting_list)
-            posting_list.term_weight[doc_id] = weights[token]
+            posting_list.tf_weight[doc_id] = weights[token]
     
     def calculate_tf(self, doc_id:int, tokens:List[str]):
         """
@@ -163,7 +189,11 @@ class TF_IDF_Ranker(Ranker):
 
 
 class BM25_Ranker(Ranker):
-    pass
+    documents_length: DefaultDict
+    allowed_posting_types = [PostingType.FREQUENCY]
+    posting_class: PostingList.__class__
+
+
 
 
 ranking_methods = {
