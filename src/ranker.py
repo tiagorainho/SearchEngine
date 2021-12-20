@@ -19,6 +19,12 @@ class Ranker:
         if posting_type not in self.allowed_posting_types:
             raise Exception(f'{ posting_type } not supported for {self.__class__}')
     
+    def load_metadata(self, metadata: Dict[str, str]):
+        # check if is the same ranker, posting list, etc
+        if self.metadata['ranker'] != 'TF_IDF':
+            raise Exception(f'Ranker "{ self.metadata["ranker"] }" not compatible')
+        self.metadata = metadata
+    
     def metadata(self) -> Dict[str, object]:
         pass
 
@@ -40,8 +46,7 @@ class Ranker:
     def load_posting_list(posting_list_class:PostingList.__class__, line:str) -> PostingList:
         pass
 
-    @staticmethod
-    def order(term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
+    def order(self, term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
         pass
 
 
@@ -60,6 +65,12 @@ class TF_IDF_Ranker(Ranker):
         super().__init__(posting_type)
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
+    
+    def load_metadata(self, metadata: Dict[str, str]):
+        # check if is the same ranker, posting list, etc
+        if metadata['ranker'] != 'TF_IDF':
+            raise Exception(f'Ranker "{ metadata["ranker"] }" not compatible')
+        self.metadata = metadata
 
     def metadata(self) -> Dict[str, object]:
         return {
@@ -67,8 +78,12 @@ class TF_IDF_Ranker(Ranker):
             'posting_class': 'frequency'
         }
     
-    @staticmethod
-    def order(term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
+    def pos_processing(self) -> Dict[str, object]:
+        return {
+            'some_key': 'some_value'
+        }
+    
+    def order(self, term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
         query = term_to_posting_list.keys()
 
         tfs = dict()

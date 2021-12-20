@@ -5,6 +5,7 @@ from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
 from ranker import Ranker
 import json
+import os
 import io
 
 
@@ -13,6 +14,9 @@ class InvertedIndex:
     file: str
     posting_list_class: PostingList
     delimiter: str = ' '
+    metadata: Dict[str, object]
+    metadata_start: int
+    metadata_end: int
 
     # tratar de deixar posting lists em memoria com base nas pesquisas feitas
 
@@ -21,19 +25,46 @@ class InvertedIndex:
         self.posting_list_class = PostingListFactory(posting_type)
         self.file = output_path
         if inverted_index == None and output_path != None:
-            self.load_dictionary(output_path)            
+            self.load_dictionary(output_path)
 
     def load_dictionary(self, file_name:str):
+        self.metadata = dict()
+
         with open(file_name, "r", encoding='utf-8', errors='ignore') as file:
-            lines = file.readlines()
-            for line in lines:
+            # get pre-processing metadata
+            line = file.readline()
+            self.metadata = json.load(io.StringIO(line))
+            self.metadata_start = file.tell()
+
+            # get pos-processing metadata
+            file.seek(0, os.SEEK_END)
+            self.metadata_end = file.tell()
+            try:
+                file.seek(file.tell() - 2, os.SEEK_SET)
+                while file.read(1) != '\n':
+                    self.metadata_end -= 2
+                    file.seek(file.tell() - 2, os.SEEK_SET)
+            except Exception:
+                raise Exception("Error fetching pos-processing metadata")
+            
+            posprocessing_metadata = file.readline()
+            metadata_pos_processing = json.load(io.StringIO(posprocessing_metadata))
+
+            for key, value in metadata_pos_processing.items():
+                self.metadata[key] = value
+
+            file.seek(self.metadata_start)
+            curr_pos = self.metadata_start
+            while curr_pos >= self.metadata_start and curr_pos < self.metadata_end:
+                line = file.readline()
                 term_postinglist = line.split(self.delimiter, 1)
                 term = term_postinglist[0]
                 self.inverted_index[term] = None
+                curr_pos = file.tell()
     
     def search(self, terms: List[str], n:int, ranker:Ranker, show_score:bool=False) -> List[int] or List[Tuple[int, float]]:
         term_to_posting_lists = self.light_search(terms, ranker.load_posting_list)
-        results = ranker.__class__.order(term_to_posting_lists)[:n]
+        results = ranker.order(term_to_posting_lists)[:n]
         if not show_score:
             results = [tpl[0] for tpl in results]
         return results
@@ -57,21 +88,10 @@ class InvertedIndex:
 
         # fetch the terms that are in the index file but not in memory and store them
         with open(self.file, "r", encoding='utf-8', errors='ignore') as file:
-            line = file.readline()
-            metadata = json.load(io.StringIO(line))
-            start = file.tell()
-
-            # check if is the same ranker, posting list, etc
-            if metadata['ranker'] != 'TF_IDF':
-                raise Exception(f'Ranker "{ metadata["ranker"] }" not compatible')
-
-
-            file.seek(0, 2)
-            file_size = file.tell()
-
+            
             for term in terms:
-                min = start
-                max = file_size
+                min = self.metadata_start
+                max = self.metadata_end
                 file.seek(min)
                 line = file.readline()
                 line_term = line.split(self.delimiter)[0]
@@ -125,9 +145,9 @@ class InvertedIndex:
         """
         return sorted(list(self.inverted_index.keys()))
     
-    def save_metadata(self, ouput_path:str, metadata:Dict[str, object]):
-        with open(ouput_path, 'w') as output_file:
-            output_file.write(f'{json.dumps(metadata)}\n')
+    def save_data(self, ouput_path:str, data:Dict[str, object]):
+        with open(ouput_path, 'a+') as output_file:
+            output_file.write(f'{json.dumps(data)}\n')
 
     def save(self, output_file: str, ranker:Ranker=None) -> None:
         line_parser = lambda term: f'{ term }{ self.delimiter }{ self.inverted_index[term] }\n'

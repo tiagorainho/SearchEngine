@@ -156,7 +156,7 @@ if __name__ == '__main__':
 
     
     print("------------ Indexing -------------")
-
+    """
     t1 = time.perf_counter()
     indexer = Spimi(max_ram_usage=max_ram, max_block_size=max_block_size,
                         auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type, ranking_method=RankingMethod.TF_IDF)
@@ -175,12 +175,13 @@ if __name__ == '__main__':
 
 
     print(f'whole indexing took: {t2-t1} seconds')
-    
+    """
 
     print("\n------------ Searching -------------")
 
     t1 = time.perf_counter()
-    index = InvertedIndex(None, posting_list_type, 'cache/index/1639962578.17041.index')
+    index = InvertedIndex(None, posting_list_type, 'cache/index/1640003920.956214.index')
+    ranker.load_metadata(index.metadata)
     print("retrieved index: ", index.inverted_index)
     print()
 

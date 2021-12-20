@@ -237,8 +237,7 @@ class Spimi():
                 f"{self.AUXILIARY_DIR}/{self.block_number}.{self.BLOCK_SUFFIX}")
 
         # save metadata
-        self.inverted_index.save_metadata(Path(ouput_path).resolve(), self.metadata)
-
+        self.inverted_index.save_data(Path(ouput_path).resolve(), self.metadata)
 
         # get all files from the postings directory
         block_paths = Path(self.AUXILIARY_DIR).rglob(f"*{self.BLOCK_SUFFIX}")
@@ -246,6 +245,9 @@ class Spimi():
 
         # merge those blocks into one file
         index = self._merge_blocks(input_paths, ouput_path)
+
+        # save pos-processing
+        self.inverted_index.save_data(Path(ouput_path).resolve(), self.ranker.pos_processing())
 
         return index
 
