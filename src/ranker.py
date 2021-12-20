@@ -2,7 +2,7 @@
 from __future__ import annotations
 from enum import Enum
 from collections import defaultdict
-from typing import Dict, DefaultDict, List
+from typing import Dict, DefaultDict, List, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
 import math
@@ -16,20 +16,16 @@ class Ranker:
     allowed_posting_types:List[PostingType]
 
     def __init__(self, posting_type:PostingType):
-        if posting_type not in self.allowed_posting_types:
-            raise Exception(f'{ posting_type } not supported for {self.__class__}')
+        pass
     
-    def load_metadata(self, metadata: Dict[str, str]):
-        # check if is the same ranker, posting list, etc
-        if self.metadata['ranker'] != 'TF_IDF':
-            raise Exception(f'Ranker "{ self.metadata["ranker"] }" not compatible')
+    def load_metadata(self, metadata:Dict[str, object]):
         self.metadata = metadata
     
     def metadata(self) -> Dict[str, object]:
-        pass
+        return dict()
 
     def pos_processing(self) -> Dict[str, object]:
-        pass
+        return dict()
 
     def before_add_tokens(self, term_to_postinglist: Dict[str, PostingList], tokens:List[str], doc_id:int):
         pass
@@ -38,16 +34,22 @@ class Ranker:
         pass
 
     def document_repr(self, posting_list:PostingList):
-        pass
+        return str(posting_list)
 
     def term_repr(self, posting_list:PostingList):
-        pass
+        return str(posting_list)
 
-    def load_posting_list(posting_list_class:PostingList.__class__, line:str) -> PostingList:
-        pass
+    def load_posting_list(self, posting_list_class:PostingList.__class__, line:str) -> PostingList:
+        return posting_list_class.load(line)
 
-    def order(self, term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
-        pass
+    def order(self, term_to_posting_list:Dict[str, PostingList]) -> List[Tuple[int, float]]:
+        res = list()
+        for term, posting_list in term_to_posting_list.items():
+            if posting_list == None: continue
+            for doc_id in posting_list.get_documents():
+                res.append((doc_id, 0))
+        return res
+
 
 
 
@@ -63,6 +65,8 @@ class TF_IDF_Ranker(Ranker):
 
     def __init__(self, posting_type:PostingType):
         super().__init__(posting_type)
+        if posting_type not in self.allowed_posting_types:
+            raise Exception(f'{ posting_type } not supported for {self.__class__}')
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
     
@@ -83,7 +87,7 @@ class TF_IDF_Ranker(Ranker):
             'some_key': 'some_value'
         }
     
-    def order(self, term_to_posting_list:Dict[str, PostingList]) -> Dict[int, float]:
+    def order(self, term_to_posting_list:Dict[str, PostingList]) -> List[Tuple[int, float]]:
         query = term_to_posting_list.keys()
 
         tfs = dict()
@@ -120,7 +124,7 @@ class TF_IDF_Ranker(Ranker):
     def posting_list_init(posting_list:PostingList):
         posting_list.tf_weight = defaultdict(int)
     
-    def load_posting_list(self, line:str) -> PostingList:
+    def load_posting_list(self, posting_list_class:PostingList.__class__, line:str) -> PostingList:
 
         posting_list = self.posting_class()
         TF_IDF_Ranker.posting_list_init(posting_list)

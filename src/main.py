@@ -1,3 +1,4 @@
+from string import ascii_letters
 from models.spimi import Spimi
 from models.index import InvertedIndex
 from models.posting import PostingType
@@ -156,32 +157,33 @@ if __name__ == '__main__':
 
     
     print("------------ Indexing -------------")
-    """
+    
     t1 = time.perf_counter()
-    indexer = Spimi(max_ram_usage=max_ram, max_block_size=max_block_size,
-                        auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type, ranking_method=RankingMethod.TF_IDF)
+    indexer = Spimi(ranker=ranker, max_ram_usage=max_ram, max_block_size=max_block_size,
+                        auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type)
 
     tokenizer = Tokenizer(min_token_length, stop_words, language)
     for i, parsed_text in enumerate(texts):
         tokens = tokenizer.tokenize(parsed_text)
-        indexer.add_document(doc_id=i, tokens=tokens)
-
+        text = ascii_letters[i]
+        
+        indexer.add_document(doc_id=text, tokens=tokens)
+    
     index = indexer.construct_index(OUTPUT_INDEX)
-
+    
     t2 = time.perf_counter()
     print(index.inverted_index)
 
     indexer.clear_blocks()
-
+    
 
     print(f'whole indexing took: {t2-t1} seconds')
-    """
-
+    
+    
     print("\n------------ Searching -------------")
 
     t1 = time.perf_counter()
-    index = InvertedIndex(None, posting_list_type, 'cache/index/1640003920.956214.index')
-    ranker.load_metadata(index.metadata)
+    index = InvertedIndex(None, posting_list_type, 'cache/index/1640043363.9001338.index')
     print("retrieved index: ", index.inverted_index)
     print()
 

@@ -3,18 +3,17 @@ from typing import Dict, Generator, List, Tuple
 from models.index import InvertedIndex
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
-from ranker import Ranker, RankerFactory, RankingMethod
+from ranker import Ranker
 from pathlib import Path
 import threading
 import psutil
 import heapq
 import os
 import glob
-import json
 
 class Spimi():
     AUXILIARY_DIR: str
-    BLOCK_SUFFIX: str = 'block'
+    BLOCK_SUFFIX: str
     MAX_BLOCK_SIZE: int
     MAX_RAM_USAGE: int
     block_number: int
@@ -27,7 +26,7 @@ class Spimi():
     can_update_ram: threading.Event
     document_done: threading.Event
 
-    def __init__(self, max_ram_usage: int = 85, max_block_size: int = 10000, auxiliary_dir: str = 'cache/blocks', posting_type: PostingType = PostingType.FREQUENCY, ranking_method:RankingMethod=RankingMethod.TF_IDF) -> None:
+    def __init__(self, ranker: Ranker = None, posting_type: PostingType = PostingType.FREQUENCY, max_ram_usage: int = 85, max_block_size: int = 10000, auxiliary_dir: str = 'cache/blocks') -> None:
         """
         Creates a new instance of a SPIMI indexer, this is used to create indexes and initialize static variables
 
@@ -37,11 +36,12 @@ class Spimi():
         self.MAX_BLOCK_SIZE = max_block_size
         self.MAX_RAM_USAGE = max_ram_usage
         self.AUXILIARY_DIR = auxiliary_dir
+        self.BLOCK_SUFFIX = 'block'
         self.block_number = 0
         self.inverted_index = InvertedIndex(dict(), posting_type)
         self.posting_type = posting_type
         self.posting_list_class = PostingListFactory(posting_type)
-        self.ranker:Ranker = RankerFactory(ranking_method)(posting_type)
+        self.ranker = ranker if ranker != None else Ranker(posting_type)
         self.extend_metadata(self.ranker.metadata())
 
         self.ram_usage = self.get_ram_usage()
@@ -169,6 +169,8 @@ class Spimi():
             first_term, first_posting_list = self.load_line(first_line)
             heap.append(Node(first_term, first_posting_list, i))
         heapq.heapify(heap)
+
+        print(heap[0].posting_list)
 
         # merge documents until there is none left
         while len(heap) > 0:

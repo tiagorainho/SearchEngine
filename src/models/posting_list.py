@@ -40,7 +40,7 @@ class BooleanPostingList(PostingList):
         return list(self.posting_list)
 
     @staticmethod
-    def load(line) -> BooleanPostingList:
+    def load(line:str) -> BooleanPostingList:
         new_posting_list = BooleanPostingList()
         for doc_id in line.split(' '):
             new_posting_list.posting_list.add(doc_id)
@@ -93,11 +93,14 @@ class FrequencyPostingList(PostingList):
         new_posting_list = FrequencyPostingList()
         for posting in line.split(' '):
             docid_freq = posting.split('-')
-            new_posting_list[docid_freq[0]] = docid_freq[1]
+            new_posting_list.posting_list[docid_freq[0]] = docid_freq[1]
         return new_posting_list
  
     def __repr__(self):
         return ' '.join([f'{doc_id}-{freq}' for doc_id, freq in self.posting_list.items()])
+    
+    def repr(self):
+        return self.__repr__()
 
 
 class PositionalPostingList(PostingList):

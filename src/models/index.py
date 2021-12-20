@@ -63,6 +63,10 @@ class InvertedIndex:
                 curr_pos = file.tell()
     
     def search(self, terms: List[str], n:int, ranker:Ranker, show_score:bool=False) -> List[int] or List[Tuple[int, float]]:
+        if ranker == None:
+            ranker = Ranker(self.posting_list_class().posting_type)
+
+        ranker.load_metadata(self.metadata)
         term_to_posting_lists = self.light_search(terms, ranker.load_posting_list)
         results = ranker.order(term_to_posting_lists)[:n]
         if not show_score:
@@ -109,7 +113,7 @@ class InvertedIndex:
                         min = middle
 
                 if term == line_term:
-                    posting_list = load_posting_list_func(line_posting_list)
+                    posting_list = load_posting_list_func(self.posting_list_class, line_posting_list)
                     matches[term] = posting_list
                     self.inverted_index[term] = posting_list
 
@@ -136,7 +140,6 @@ class InvertedIndex:
 
             posting_list.add(doc_id, position)
 
-
     def sorted_terms(self):
         """
         Returns a list of the terms sorted by alphabetic order
@@ -149,19 +152,15 @@ class InvertedIndex:
         with open(ouput_path, 'a+') as output_file:
             output_file.write(f'{json.dumps(data)}\n')
 
-    def save(self, output_file: str, ranker:Ranker=None) -> None:
-        line_parser = lambda term: f'{ term }{ self.delimiter }{ self.inverted_index[term] }\n'
-        if ranker != None:
-            line_parser = lambda term: f'{ term }{ self.delimiter }{ ranker.document_repr(self.inverted_index[term]) }\n'
-
+    def save(self, output_file: str, ranker:Ranker) -> None:
         with open(output_file, 'w') as file:
             for term in self.sorted_terms():
-                line = line_parser(term)
+                line = f'{ term }{ self.delimiter }{ ranker.document_repr(self.inverted_index[term]) }\n'
                 file.write(line)
-
-    def load(self, line: str, ranker) -> Tuple[str, PostingList]:
+    
+    def load(self, line: str, ranker:Ranker) -> Tuple[str, PostingList]:
         term, posting_list_str = tuple(line.split(self.delimiter, 1))
-        return term, ranker.load_posting_list(posting_list_str)
+        return term, ranker.load_posting_list(self.posting_list_class, posting_list_str)
 
     def __repr__(self):
         repr = ''
