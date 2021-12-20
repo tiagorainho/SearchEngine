@@ -4,6 +4,8 @@ from typing import Dict, List, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
 from ranker import Ranker
+import json
+import io
 
 
 class InvertedIndex:
@@ -36,9 +38,9 @@ class InvertedIndex:
             results = [tpl[0] for tpl in results]
         return results
 
-
     def light_search(self, terms: List[str], load_posting_list_func:FunctionType) -> Dict[str, PostingList]:
         matches = {term:None for term in terms}
+
         for term in terms:
             if term in self.inverted_index:
                 posting_list:PostingList = self.inverted_index.get(term)
@@ -55,14 +57,22 @@ class InvertedIndex:
 
         # fetch the terms that are in the index file but not in memory and store them
         with open(self.file, "r", encoding='utf-8', errors='ignore') as file:
-            
+            line = file.readline()
+            metadata = json.load(io.StringIO(line))
+            start = file.tell()
+
+            # check if is the same ranker, posting list, etc
+            if metadata['ranker'] != 'TF_IDF':
+                raise Exception(f'Ranker "{ metadata["ranker"] }" not compatible')
+
+
             file.seek(0, 2)
             file_size = file.tell()
 
             for term in terms:
-                file.seek(0)
-                min = 0
+                min = start
                 max = file_size
+                file.seek(min)
                 line = file.readline()
                 line_term = line.split(self.delimiter)[0]
 
@@ -114,6 +124,10 @@ class InvertedIndex:
         :return: list of sorted terms based on the string comparison after normalizing to lower case letters
         """
         return sorted(list(self.inverted_index.keys()))
+    
+    def save_metadata(self, ouput_path:str, metadata:Dict[str, object]):
+        with open(ouput_path, 'w') as output_file:
+            output_file.write(f'{json.dumps(metadata)}\n')
 
     def save(self, output_file: str, ranker:Ranker=None) -> None:
         line_parser = lambda term: f'{ term }{ self.delimiter }{ self.inverted_index[term] }\n'
@@ -126,13 +140,6 @@ class InvertedIndex:
                 file.write(line)
 
     def load(self, line: str, ranker) -> Tuple[str, PostingList]:
-        """"
-        parts = line.split(self.delimiter, 1)
-        posting_list_parts = parts[1].split('/')
-        posting_list = self.posting_list_class.load(posting_list_parts[0])
-        posting_list.term_weight = posting_list_parts[1]
-        return parts[0], posting_list
-        """
         term, posting_list_str = tuple(line.split(self.delimiter, 1))
         return term, ranker.load_posting_list(posting_list_str)
 

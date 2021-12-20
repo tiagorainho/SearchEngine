@@ -180,7 +180,7 @@ if __name__ == '__main__':
     print("\n------------ Searching -------------")
 
     t1 = time.perf_counter()
-    index = InvertedIndex(None, posting_list_type, 'cache/index/1639915619.996175.index')
+    index = InvertedIndex(None, posting_list_type, 'cache/index/1639962578.17041.index')
     print("retrieved index: ", index.inverted_index)
     print()
 
