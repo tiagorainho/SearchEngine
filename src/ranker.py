@@ -52,7 +52,6 @@ class Ranker:
                 res.append((doc_id, 0))
         return res
 
-
 class TF_IDF_Ranker(Ranker):
     documents_length: DefaultDict
     allowed_posting_types = [PostingType.FREQUENCY]
@@ -89,6 +88,7 @@ class TF_IDF_Ranker(Ranker):
         }
 
     def order(self, term_to_posting_list: Dict[str, PostingList]) -> List[Tuple[int, float]]:
+
         query = term_to_posting_list.keys()
 
         tfs = dict()
@@ -308,6 +308,7 @@ class BM25_Ranker(Ranker):
             posting_list.term_weight[doc_id] = weights[token] * (self.k + 1)
             posting_list.term_weight[doc_id] /= self.k * \
                 ((1-self.b) + self.b * dl / avgdl) + weights[token]
+
 
     def calculate_tf(self, doc_id: int, tokens: List[str]):
         """
