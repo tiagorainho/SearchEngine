@@ -1,9 +1,8 @@
 from io import FileIO
 from typing import Dict, Generator, List, Tuple
 from models.index import InvertedIndex
-from models.posting import PostingType
-from models.posting_list import PostingList, PostingListFactory
-from ranker import Ranker
+from models.posting_list import PostingList, PostingListFactory, PostingType
+from models.ranker import Ranker
 from pathlib import Path
 import threading
 import psutil

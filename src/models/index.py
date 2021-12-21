@@ -1,9 +1,8 @@
 
 from types import FunctionType
 from typing import Dict, List, Tuple
-from models.posting import PostingType
-from models.posting_list import PostingList, PostingListFactory
-from ranker import Ranker
+from models.posting_list import PostingList, PostingListFactory, PostingType
+from models.ranker import Ranker
 import json
 import os
 import io

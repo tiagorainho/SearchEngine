@@ -1,4 +1,4 @@
-from src.tokenizer import Tokenizer
+from models.tokenizer import Tokenizer
 
 
 def test_instantiation():

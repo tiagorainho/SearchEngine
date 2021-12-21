@@ -1,4 +1,4 @@
-from src.parser import Parser
+from models.parser import Parser
 
 
 def test_parse():

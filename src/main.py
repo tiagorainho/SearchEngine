@@ -1,11 +1,11 @@
 from string import ascii_letters
 from models.spimi import Spimi
 from models.index import InvertedIndex
-from models.posting import PostingType
 import time
-from parser import Parser
-from ranker import Ranker, RankerFactory, RankingMethod
-from tokenizer import Tokenizer
+from models.posting_list import PostingType
+from models.parser import Parser
+from models.ranker import RankerFactory, RankingMethod
+from models.tokenizer import Tokenizer
 from argparse import ArgumentParser
 import cProfile
 
@@ -34,6 +34,7 @@ class Main:
         )
         arg_parser.add_argument(
             "--language",
+            type=str,
             default=None,
             dest="language",
             help="Language of the documents, needed to apply snow_stemmer",
@@ -85,6 +86,7 @@ class Main:
         )
         arg_parser.add_argument(
             "--ranker",
+            type=RankingMethod,
             dest="ranking_method",
             help="Ranking method to use while indexing and searching",
             required=False,
@@ -92,6 +94,7 @@ class Main:
         )
         arg_parser.add_argument(
             "--k",
+            type=float,
             dest="bm25_k",
             help="K value for the BM25 ranking method",
             required=False,
@@ -99,19 +102,29 @@ class Main:
         )
         arg_parser.add_argument(
             "--b",
+            type=float,
             dest="bm25_b",
             help="B value for the BM25 ranking method",
             required=False,
             default=0.5
         )
+        arg_parser.add_argument(
+            "--n",
+            type=int,
+            dest="n_results",
+            help="Number of results to return in the search method",
+            required=False,
+            default=10
+        )
 
         self.args = arg_parser.parse_args()
+
 
     def index(self):
 
         ranker = None
         if self.args.ranking_method != None:
-            ranker = RankerFactory(RankingMethod.BM25)(self.args.posting_list_type, 0.5, 0.75)
+            ranker = RankerFactory(self.args.ranking_method)(self.args.posting_list_type, k=1.25, b=0.75)
 
         indexer = Spimi(ranker=ranker, max_ram_usage=self.args.max_ram, max_block_size=self.args.max_block_size,
                     auxiliary_dir=BLOCK_DIR, posting_type=self.args.posting_list_type)
@@ -133,9 +146,7 @@ class Main:
                 tokens = tokenizer.tokenize(parsed_text)
                 indexer.add_document(doc_id=doc_id, tokens=tokens)
 
-            print("const begin")
             index = indexer.construct_index(OUTPUT_INDEX)
-            print("const end")
             end = time.perf_counter()
             print(
                 f"End file indexing {round((end-start), 3)} seconds with {indexer.block_number} temporary file{'s' if indexer.block_number != 1 else ''}")
@@ -144,35 +155,35 @@ class Main:
 
             return index
 
-    def search(self):
-        # ranker = None
-        # if self.args.ranking_method != None:
-        #     ranker = RankerFactory(self.args.ranking_method)(self.args.posting_list_type, self.args.k, self.args.b)
-        ranker = RankerFactory(RankingMethod.BM25)(self.args.posting_list_type, 1.25, 0.75)
+    def search(self, index:InvertedIndex=None):
+        ranker = None
+        if self.args.ranking_method != None:
+            ranker = RankerFactory(self.args.ranking_method)(self.args.posting_list_type, k=self.args.bm25_k, b=self.args.bm25_b)
+
         tokenizer = Tokenizer(self.args.min_token_length,
                               self.args.stop_words, self.args.language)
 
-        t1 = time.perf_counter()
-        index = InvertedIndex(None, self.args.posting_list_type,
-                              self.args.search_index)
-        t2 = time.perf_counter()
-        print(f"Time to start searcher {(t2-t1)* 100}ms")
+        
 
         tokens = tokenizer.tokenize(" ".join(self.args.search_terms))
 
-        print(tokens)
-
         t1 = time.perf_counter()
-        matches = index.search(tokens, 10, ranker, True)
+        matches = index.search(tokens, self.args.n_results, ranker, show_score=False)
         t2 = time.perf_counter()
         print(f"Search in {(t2-t1)* 100}ms")
         print(f"{matches}")
 
     def main(self):
         if self.args.documents:
-            self.index()
-        elif self.args.search_index and self.args.search_terms:
-            self.search()
+            index = self.index()
+        if self.args.search_index:
+            t1 = time.perf_counter()
+            index = InvertedIndex(None, self.args.posting_list_type,
+                                self.args.search_index)
+            t2 = time.perf_counter()
+            print(f"Time to start searcher {(t2-t1)* 100}ms")
+        if self.args.search_terms:
+            self.search(index)
 
 
 if __name__ == '__main__':
