@@ -170,8 +170,6 @@ class Spimi():
             heap.append(Node(first_term, first_posting_list, i))
         heapq.heapify(heap)
 
-        print(heap[0].posting_list)
-
         # merge documents until there is none left
         while len(heap) > 0:
             smallest_node = heapq.heappop(heap)

@@ -4,9 +4,10 @@ from models.index import InvertedIndex
 from models.posting import PostingType
 import time
 from parser import Parser
-from ranker import RankerFactory, RankingMethod
+from ranker import Ranker, RankerFactory, RankingMethod
 from tokenizer import Tokenizer
 from argparse import ArgumentParser
+import cProfile
 
 BLOCK_DIR = 'cache/blocks'
 OUTPUT_INDEX = f'cache/index/{time.time()}.index'
@@ -82,10 +83,38 @@ class Main:
             help="Term to search for",
             required=False
         )
+        arg_parser.add_argument(
+            "--ranker",
+            dest="ranking_method",
+            help="Ranking method to use while indexing and searching",
+            required=False,
+            default=None
+        )
+        arg_parser.add_argument(
+            "--k",
+            dest="bm25_k",
+            help="K value for the BM25 ranking method",
+            required=False,
+            default=0.75
+        )
+        arg_parser.add_argument(
+            "--b",
+            dest="bm25_b",
+            help="B value for the BM25 ranking method",
+            required=False,
+            default=0.5
+        )
 
         self.args = arg_parser.parse_args()
 
     def index(self):
+
+        ranker = None
+        if self.args.ranking_method != None:
+            ranker = RankerFactory(RankingMethod.BM25)(self.args.posting_list_type, 0.5, 0.75)
+
+        indexer = Spimi(ranker=ranker, max_ram_usage=self.args.max_ram, max_block_size=self.args.max_block_size,
+                    auxiliary_dir=BLOCK_DIR, posting_type=self.args.posting_list_type)
 
         for document in self.args.documents:
             parser = Parser(document, 'review_id', [
@@ -94,20 +123,19 @@ class Main:
             tokenizer = Tokenizer(
                 self.args.min_token_length, self.args.stop_words, self.args.language)
 
-            indexer = Spimi(max_ram_usage=self.args.max_ram, max_block_size=self.args.max_block_size,
-                            auxiliary_dir=BLOCK_DIR, posting_type=self.args.posting_list_type)
-
             parser_generator = parser.parse('\t')
 
             print(
                 f"Start {str(self.args.posting_list_type).lower().replace('postingtype.','')} indexing...")
 
             start = time.perf_counter()
-            for i, (_, parsed_text) in enumerate(parser_generator):
+            for doc_id, parsed_text in parser_generator:
                 tokens = tokenizer.tokenize(parsed_text)
-                indexer.add_document(doc_id=i, tokens=tokens)
+                indexer.add_document(doc_id=doc_id, tokens=tokens)
 
+            print("const begin")
             index = indexer.construct_index(OUTPUT_INDEX)
+            print("const end")
             end = time.perf_counter()
             print(
                 f"End file indexing {round((end-start), 3)} seconds with {indexer.block_number} temporary file{'s' if indexer.block_number != 1 else ''}")
@@ -117,6 +145,10 @@ class Main:
             return index
 
     def search(self):
+        # ranker = None
+        # if self.args.ranking_method != None:
+        #     ranker = RankerFactory(self.args.ranking_method)(self.args.posting_list_type, self.args.k, self.args.b)
+        ranker = RankerFactory(RankingMethod.BM25)(self.args.posting_list_type, 1.25, 0.75)
         tokenizer = Tokenizer(self.args.min_token_length,
                               self.args.stop_words, self.args.language)
 
@@ -128,11 +160,13 @@ class Main:
 
         tokens = tokenizer.tokenize(" ".join(self.args.search_terms))
 
+        print(tokens)
+
         t1 = time.perf_counter()
-        matches_light = index.search(tokens, 10)
+        matches = index.search(tokens, 10, ranker, True)
         t2 = time.perf_counter()
         print(f"Search in {(t2-t1)* 100}ms")
-        print(f"{matches_light}")
+        print(f"{matches}")
 
     def main(self):
         if self.args.documents:
@@ -142,7 +176,10 @@ class Main:
 
 
 if __name__ == '__main__':
-    # Main().main()
+    #cProfile.run('Main().main()')
+    Main().main()
+
+    exit(0)
 
     stop_words = 'stop_words.txt'
     min_token_length = 0
@@ -182,7 +219,7 @@ if __name__ == '__main__':
 
     t1 = time.perf_counter()
     index = InvertedIndex(None, posting_list_type,
-                          'cache/index/1640045113.7828.index')
+                          'cache/index/1640048848.117843.index')
     print("retrieved index: ", index.inverted_index)
     print()
 
@@ -193,5 +230,3 @@ if __name__ == '__main__':
     print(f'whole searching took: {t2-t1} seconds')
     print()
     print(f"result: {matches}")
-    print()
-    print("index: ", index.inverted_index)

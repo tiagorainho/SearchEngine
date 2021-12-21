@@ -45,7 +45,7 @@ class Ranker:
 
     def order(self, term_to_posting_list: Dict[str, PostingList]) -> List[Tuple[int, float]]:
         res = list()
-        for term, posting_list in term_to_posting_list.items():
+        for _, posting_list in term_to_posting_list.items():
             if posting_list == None:
                 continue
             for doc_id in posting_list.get_documents():
@@ -89,12 +89,11 @@ class TF_IDF_Ranker(Ranker):
 
     def order(self, term_to_posting_list: Dict[str, PostingList]) -> List[Tuple[int, float]]:
 
-        query = term_to_posting_list.keys()
+        query = list(term_to_posting_list.keys())
 
         tfs = dict()
         for token in query:
-            tfs[token] = TF_IDF_Ranker.uniform_tf(
-                sum([1 for t in query if t == token]))
+            tfs[token] = TF_IDF_Ranker.uniform_tf(query.count(token))
 
         weights = tfs.values()
         sum_weights = sum([weight*weight for weight in weights])
@@ -108,11 +107,12 @@ class TF_IDF_Ranker(Ranker):
                 for doc in docs:
                     # query
                     ltc = (tf / sqrt_weights) * posting_list.idf
+
                     # documents
                     lnc = posting_list.tf_weight[doc]
 
-                    scores[doc] = ltc * lnc
-
+                    scores[doc] += ltc * lnc
+        
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
     def document_repr(self, posting_list: PostingList):
@@ -150,7 +150,7 @@ class TF_IDF_Ranker(Ranker):
         weights = TF_IDF_Ranker.uniform_weight(tfs)
         for token in tokens:
             posting_list: PostingList = term_to_postinglist[token]
-            if 'tf_weight' not in posting_list.__dict__:
+            if not hasattr(posting_list, 'tf_weight'):
                 TF_IDF_Ranker.posting_list_init(posting_list)
             posting_list.tf_weight[doc_id] = weights[token]
 
@@ -165,8 +165,8 @@ class TF_IDF_Ranker(Ranker):
         term_frequencies = dict()
 
         for token in tokens:
-            tf = sum([1 for t in tokens if t == token])
-            term_frequencies[token] = TF_IDF_Ranker.uniform_tf(tf)
+            if token not in term_frequencies:
+                term_frequencies[token] = TF_IDF_Ranker.uniform_tf(tokens.count(token))
 
         return term_frequencies
 
@@ -175,11 +175,11 @@ class TF_IDF_Ranker(Ranker):
         return 1 + math.log10(tf)
 
     def calculate_idf(self, posting_list: PostingList):
-        return round(math.log(len(self.documents_length.keys())/len(posting_list.posting_list.keys())), 3)
+        return round(math.log(len(self.documents_length)/len(posting_list.posting_list)), 3)
 
     @staticmethod
     def calculate_weights(tfs):
-        return [tf for tf in tfs.values()]
+        return tfs.values()
 
     @staticmethod
     def uniform_weight(tfs):
@@ -214,33 +214,30 @@ class BM25_Ranker(Ranker):
         self.b = b
 
     def order(self, term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
-        query = term_to_posting_list.keys()
+        query = list(term_to_posting_list.keys())
 
         tfs = dict()
         for token in query:
-            tfs[token] = BM25_Ranker.uniform_tf(
-                sum([1 for t in query if t == token]))
+            tfs[token] = BM25_Ranker.uniform_tf(query.count(token))
 
-        weights = tfs.values()
-        sum_weights = sum([weight*weight for weight in weights])
-        sqrt_weights = math.sqrt(sum_weights)
         scores: DefaultDict[int, float] = defaultdict(float)  # doc_id, score
 
+        dl = self.metadata["document_length"]
+        avgdl = self.metadata["average_document_length"]
+        ratio_dl = dl/avgdl
         for term, tf in tfs.items():
             posting_list = term_to_posting_list.get(term)
             if posting_list != None:
                 docs: List[int] = posting_list.get_documents()
-                normalized_weight = (tf / sqrt_weights)
 
                 for doc in docs:
-                    dl = self.metadata["document_length"]
-                    avgdl = self.metadata["average_document_length"]
-                    scores[doc] = posting_list.idf
-                    scores[doc] *= normalized_weight * (self.k + 1)
-                    scores[doc] /= self.k * ((1-self.b) + self.b * dl /
-                                        avgdl) + normalized_weight
-                    scores[doc] *= posting_list.idf * \
-                        posting_list.term_weight[doc]
+                    idf = posting_list.idf
+
+                    # doc
+                    freq = posting_list.term_weight[doc]
+                    tf = (freq * (self.k + 1)) / (freq + self.k * (1 - self.b + self.b * ratio_dl ))
+                    
+                    scores[doc] += idf * tf
 
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
@@ -299,15 +296,9 @@ class BM25_Ranker(Ranker):
 
         for token in tokens:
             posting_list: PostingList = term_to_postinglist[token]
-
-            if 'term_weight' not in posting_list.__dict__:
+            if not hasattr(posting_list, 'term_weight'):
                 BM25_Ranker.posting_list_init(posting_list)
-
-            dl = sum(self.documents_length.values())
-            avgdl = dl / len(self.documents_length.keys())
-            posting_list.term_weight[doc_id] = weights[token] * (self.k + 1)
-            posting_list.term_weight[doc_id] /= self.k * \
-                ((1-self.b) + self.b * dl / avgdl) + weights[token]
+            posting_list.term_weight[doc_id] = weights[token]
 
 
     def calculate_tf(self, doc_id: int, tokens: List[str]):
