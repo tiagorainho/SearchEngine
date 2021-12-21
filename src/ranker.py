@@ -2,7 +2,7 @@
 from __future__ import annotations
 from enum import Enum
 from collections import defaultdict
-from typing import Dict, DefaultDict, List
+from typing import Dict, DefaultDict, List, Tuple
 from models.posting import PostingType
 from models.posting_list import PostingList, PostingListFactory
 import math
@@ -17,22 +17,16 @@ class Ranker:
     allowed_posting_types: List[PostingType]
 
     def __init__(self, posting_type: PostingType):
-        if posting_type not in self.allowed_posting_types:
-            raise Exception(
-                f'{ posting_type } not supported for {self.__class__}')
+        pass
 
-    def load_metadata(self, metadata: Dict[str, str]):
-        # check if is the same ranker, posting list, etc
-        if self.metadata['ranker'] != 'TF_IDF':
-            raise Exception(
-                f'Ranker "{ self.metadata["ranker"] }" not compatible')
+    def load_metadata(self, metadata: Dict[str, object]):
         self.metadata = metadata
 
     def metadata(self) -> Dict[str, object]:
-        pass
+        return dict()
 
     def pos_processing(self) -> Dict[str, object]:
-        pass
+        return dict()
 
     def before_add_tokens(self, term_to_postinglist: Dict[str, PostingList], tokens: List[str], doc_id: int):
         pass
@@ -41,17 +35,22 @@ class Ranker:
         pass
 
     def document_repr(self, posting_list: PostingList):
-        pass
+        return str(posting_list)
 
     def term_repr(self, posting_list: PostingList):
-        pass
+        return str(posting_list)
 
-    def load_posting_list(posting_list_class: PostingList.__class__, line: str) -> PostingList:
-        pass
+    def load_posting_list(self, posting_list_class: PostingList.__class__, line: str) -> PostingList:
+        return posting_list_class.load(line)
 
-    def order(self, term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
-        pass
-
+    def order(self, term_to_posting_list: Dict[str, PostingList]) -> List[Tuple[int, float]]:
+        res = list()
+        for term, posting_list in term_to_posting_list.items():
+            if posting_list == None:
+                continue
+            for doc_id in posting_list.get_documents():
+                res.append((doc_id, 0))
+        return res
 
 class TF_IDF_Ranker(Ranker):
     documents_length: DefaultDict
@@ -65,6 +64,9 @@ class TF_IDF_Ranker(Ranker):
 
     def __init__(self, posting_type: PostingType):
         super().__init__(posting_type)
+        if posting_type not in self.allowed_posting_types:
+            raise Exception(
+                f'{ posting_type } not supported for {self.__class__}')
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
 
@@ -85,7 +87,8 @@ class TF_IDF_Ranker(Ranker):
             'some_key': 'some_value'
         }
 
-    def order(self, term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
+    def order(self, term_to_posting_list: Dict[str, PostingList]) -> List[Tuple[int, float]]:
+
         query = term_to_posting_list.keys()
 
         tfs = dict()
@@ -123,7 +126,7 @@ class TF_IDF_Ranker(Ranker):
     def posting_list_init(posting_list: PostingList):
         posting_list.tf_weight = defaultdict(int)
 
-    def load_posting_list(self, line: str) -> PostingList:
+    def load_posting_list(self, posting_list_class: PostingList.__class__, line: str) -> PostingList:
 
         posting_list = self.posting_class()
         TF_IDF_Ranker.posting_list_init(posting_list)
@@ -192,8 +195,8 @@ class TF_IDF_Ranker(Ranker):
 
 
 class BM25_Ranker(Ranker):
-    k: float = 0.75
-    b: float = 0.5
+    k: float
+    b: float
     documents_length: DefaultDict
     allowed_posting_types = [PostingType.FREQUENCY]
     posting_class: PostingList.__class__
@@ -203,14 +206,14 @@ class BM25_Ranker(Ranker):
         - posting_list.term_weight : Dict[int, float]
     """
 
-    def __init__(self, posting_type: PostingType):
+    def __init__(self, posting_type: PostingType, k, b):
         super().__init__(posting_type)
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
+        self.k = k
+        self.b = b
 
     def order(self, term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
-        k = 0.75
-        b = 0.5
         query = term_to_posting_list.keys()
 
         tfs = dict()
@@ -233,10 +236,11 @@ class BM25_Ranker(Ranker):
                     dl = self.metadata["document_length"]
                     avgdl = self.metadata["average_document_length"]
                     scores[doc] = posting_list.idf
-                    scores[doc] *= normalized_weight * (k + 1)
-                    scores[doc] /= k * ((1-b) + b * dl /
+                    scores[doc] *= normalized_weight * (self.k + 1)
+                    scores[doc] /= self.k * ((1-self.b) + self.b * dl /
                                         avgdl) + normalized_weight
-                    scores[doc] *= posting_list.term_weights[doc]
+                    scores[doc] *= posting_list.idf * \
+                        posting_list.term_weight[doc]
 
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
@@ -250,22 +254,33 @@ class BM25_Ranker(Ranker):
     def metadata(self) -> Dict[str, object]:
         return {
             'ranker': 'BM25',
-            'posting_class': 'frequency',
-            'document_length': len(self.documents_length.keys()),
-            'average_document_length': sum(self.documents_length.values()) / len(self.documents_length.keys())
+            'posting_class': 'frequency'
         }
 
-    @staticmethod
+    def pos_processing(self) -> Dict[str, object]:
+        return {
+            "document_length": len(self.documents_length.keys()),
+            "average_document_length": sum(self.documents_length.values()) / len(self.documents_length.keys())
+        }
+    
+    def load_metadata(self, metadata: Dict[str, str]):
+        # check if is the same ranker, posting list, etc
+        if metadata['ranker'] != 'BM25':
+            raise Exception(f'Ranker "{ metadata["ranker"] }" not compatible')
+        self.metadata = metadata
+
+    @ staticmethod
     def posting_list_init(posting_list: PostingList):
         posting_list.term_weight = defaultdict(int)
 
-    def load_posting_list(self, line: str) -> PostingList:
+    def load_posting_list(self, posting_list_class: PostingList.__class__, line: str) -> PostingList:
 
         posting_list = self.posting_class()
-        TF_IDF_Ranker.posting_list_init(posting_list)
+        BM25_Ranker.posting_list_init(posting_list)
 
         parts = line.split('#')
         posting_list_str = parts[0]
+
         if len(parts) > 1:
             idf = parts[1]
             posting_list.idf = float(idf)
@@ -290,10 +305,10 @@ class BM25_Ranker(Ranker):
 
             dl = sum(self.documents_length.values())
             avgdl = dl / len(self.documents_length.keys())
-            posting_list.term_weight[doc_id] = posting_list.idf
-            posting_list.term_weight[doc_id] *= weights[token] * (self.k + 1)
+            posting_list.term_weight[doc_id] = weights[token] * (self.k + 1)
             posting_list.term_weight[doc_id] /= self.k * \
                 ((1-self.b) + self.b * dl / avgdl) + weights[token]
+
 
     def calculate_tf(self, doc_id: int, tokens: List[str]):
         """
@@ -307,7 +322,7 @@ class BM25_Ranker(Ranker):
 
         for token in tokens:
             tf = sum([1 for t in tokens if t == token])
-            term_frequencies[token] = TF_IDF_Ranker.uniform_tf(tf)
+            term_frequencies[token] = BM25_Ranker.uniform_tf(tf)
 
         return term_frequencies
 
@@ -325,7 +340,7 @@ class BM25_Ranker(Ranker):
     @ staticmethod
     def uniform_weight(tfs):
         normalized_weights = {}
-        weights = TF_IDF_Ranker.calculate_weights(tfs)
+        weights = BM25_Ranker.calculate_weights(tfs)
         sum_weights = sum([weight*weight for weight in weights])
         sqrt_weights = math.sqrt(sum_weights)
 
@@ -338,6 +353,8 @@ class BM25_Ranker(Ranker):
 ranking_methods = {
     RankingMethod.TF_IDF: TF_IDF_Ranker,
     RankingMethod.BM25: BM25_Ranker
+
+
 }
 
 
