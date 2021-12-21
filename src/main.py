@@ -154,7 +154,7 @@ if __name__ == '__main__':
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
     ranking_method = RankingMethod.BM25
-    ranker = RankerFactory(ranking_method)(posting_list_type)
+    ranker = RankerFactory(ranking_method)(posting_list_type, 0.75, 0.5)
 
     print("------------ Indexing -------------")
 
@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
     t1 = time.perf_counter()
     index = InvertedIndex(None, posting_list_type,
-                          'cache/index/1640043363.9001338.index')
+                          'cache/index/1640045113.7828.index')
     print("retrieved index: ", index.inverted_index)
     print()
 

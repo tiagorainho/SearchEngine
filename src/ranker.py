@@ -195,8 +195,8 @@ class TF_IDF_Ranker(Ranker):
 
 
 class BM25_Ranker(Ranker):
-    k: float = 0.75
-    b: float = 0.5
+    k: float
+    b: float
     documents_length: DefaultDict
     allowed_posting_types = [PostingType.FREQUENCY]
     posting_class: PostingList.__class__
@@ -206,14 +206,14 @@ class BM25_Ranker(Ranker):
         - posting_list.term_weight : Dict[int, float]
     """
 
-    def __init__(self, posting_type: PostingType):
+    def __init__(self, posting_type: PostingType, k, b):
         super().__init__(posting_type)
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
+        self.k = k
+        self.b = b
 
     def order(self, term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
-        k = 0.75
-        b = 0.5
         query = term_to_posting_list.keys()
 
         tfs = dict()
@@ -236,11 +236,11 @@ class BM25_Ranker(Ranker):
                     dl = self.metadata["document_length"]
                     avgdl = self.metadata["average_document_length"]
                     scores[doc] = posting_list.idf
-                    scores[doc] *= normalized_weight * (k + 1)
-                    scores[doc] /= k * ((1-b) + b * dl /
+                    scores[doc] *= normalized_weight * (self.k + 1)
+                    scores[doc] /= self.k * ((1-self.b) + self.b * dl /
                                         avgdl) + normalized_weight
                     scores[doc] *= posting_list.idf * \
-                        posting_list.term_weights[doc]
+                        posting_list.term_weight[doc]
 
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
@@ -262,6 +262,12 @@ class BM25_Ranker(Ranker):
             "document_length": len(self.documents_length.keys()),
             "average_document_length": sum(self.documents_length.values()) / len(self.documents_length.keys())
         }
+    
+    def load_metadata(self, metadata: Dict[str, str]):
+        # check if is the same ranker, posting list, etc
+        if metadata['ranker'] != 'BM25':
+            raise Exception(f'Ranker "{ metadata["ranker"] }" not compatible')
+        self.metadata = metadata
 
     @ staticmethod
     def posting_list_init(posting_list: PostingList):
