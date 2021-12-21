@@ -239,7 +239,8 @@ class BM25_Ranker(Ranker):
                     scores[doc] *= normalized_weight * (k + 1)
                     scores[doc] /= k * ((1-b) + b * dl /
                                         avgdl) + normalized_weight
-                    scores[doc] *= posting_list.term_weights[doc]
+                    scores[doc] *= posting_list.idf * \
+                        posting_list.term_weights[doc]
 
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
@@ -253,22 +254,27 @@ class BM25_Ranker(Ranker):
     def metadata(self) -> Dict[str, object]:
         return {
             'ranker': 'BM25',
-            'posting_class': 'frequency',
-            'document_length': len(self.documents_length.keys()),
-            'average_document_length': sum(self.documents_length.values()) / len(self.documents_length.keys())
+            'posting_class': 'frequency'
         }
 
-    @staticmethod
+    def pos_processing(self) -> Dict[str, object]:
+        return {
+            "document_length": len(self.documents_length.keys()),
+            "average_document_length": sum(self.documents_length.values()) / len(self.documents_length.keys())
+        }
+
+    @ staticmethod
     def posting_list_init(posting_list: PostingList):
         posting_list.term_weight = defaultdict(int)
 
-    def load_posting_list(self, line: str) -> PostingList:
+    def load_posting_list(self, posting_list_class: PostingList.__class__, line: str) -> PostingList:
 
         posting_list = self.posting_class()
-        TF_IDF_Ranker.posting_list_init(posting_list)
+        BM25_Ranker.posting_list_init(posting_list)
 
         parts = line.split('#')
         posting_list_str = parts[0]
+
         if len(parts) > 1:
             idf = parts[1]
             posting_list.idf = float(idf)
@@ -293,8 +299,7 @@ class BM25_Ranker(Ranker):
 
             dl = sum(self.documents_length.values())
             avgdl = dl / len(self.documents_length.keys())
-            posting_list.term_weight[doc_id] = posting_list.idf
-            posting_list.term_weight[doc_id] *= weights[token] * (self.k + 1)
+            posting_list.term_weight[doc_id] = weights[token] * (self.k + 1)
             posting_list.term_weight[doc_id] /= self.k * \
                 ((1-self.b) + self.b * dl / avgdl) + weights[token]
 
@@ -310,7 +315,7 @@ class BM25_Ranker(Ranker):
 
         for token in tokens:
             tf = sum([1 for t in tokens if t == token])
-            term_frequencies[token] = TF_IDF_Ranker.uniform_tf(tf)
+            term_frequencies[token] = BM25_Ranker.uniform_tf(tf)
 
         return term_frequencies
 
@@ -328,7 +333,7 @@ class BM25_Ranker(Ranker):
     @ staticmethod
     def uniform_weight(tfs):
         normalized_weights = {}
-        weights = TF_IDF_Ranker.calculate_weights(tfs)
+        weights = BM25_Ranker.calculate_weights(tfs)
         sum_weights = sum([weight*weight for weight in weights])
         sqrt_weights = math.sqrt(sum_weights)
 
@@ -341,6 +346,8 @@ class BM25_Ranker(Ranker):
 ranking_methods = {
     RankingMethod.TF_IDF: TF_IDF_Ranker,
     RankingMethod.BM25: BM25_Ranker
+
+
 }
 
 

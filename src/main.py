@@ -101,12 +101,12 @@ class Main:
 
             print(
                 f"Start {str(self.args.posting_list_type).lower().replace('postingtype.','')} indexing...")
-            
+
             start = time.perf_counter()
             for i, (_, parsed_text) in enumerate(parser_generator):
                 tokens = tokenizer.tokenize(parsed_text)
                 indexer.add_document(doc_id=i, tokens=tokens)
-                
+
             index = indexer.construct_index(OUTPUT_INDEX)
             end = time.perf_counter()
             print(
@@ -143,47 +143,46 @@ class Main:
 
 if __name__ == '__main__':
     # Main().main()
-    
+
     stop_words = 'stop_words.txt'
     min_token_length = 0
     language = None
-    texts = ['ola bem bem, curto bue de escrever ola', " e tu? ta bem td fixe oi oi ola cnt", "kkk oi haha oafahfai fuah ahfa hauf uawfh a"]
+    texts = ['ola bem bem, curto bue de escrever ola',
+             " e tu? ta bem td fixe oi oi ola cnt", "kkk oi haha oafahfai fuah ahfa hauf uawfh a"]
     search_terms = "oi ola tudo kkk"
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
-    ranking_method = RankingMethod.TF_IDF
+    ranking_method = RankingMethod.BM25
     ranker = RankerFactory(ranking_method)(posting_list_type)
 
-    
     print("------------ Indexing -------------")
-    
+
     t1 = time.perf_counter()
     indexer = Spimi(ranker=ranker, max_ram_usage=max_ram, max_block_size=max_block_size,
-                        auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type)
+                    auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type)
 
     tokenizer = Tokenizer(min_token_length, stop_words, language)
     for i, parsed_text in enumerate(texts):
         tokens = tokenizer.tokenize(parsed_text)
         text = ascii_letters[i]
-        
+
         indexer.add_document(doc_id=text, tokens=tokens)
-    
+
     index = indexer.construct_index(OUTPUT_INDEX)
-    
+
     t2 = time.perf_counter()
     print(index.inverted_index)
 
     indexer.clear_blocks()
-    
 
     print(f'whole indexing took: {t2-t1} seconds')
-    
-    
+
     print("\n------------ Searching -------------")
 
     t1 = time.perf_counter()
-    index = InvertedIndex(None, posting_list_type, 'cache/index/1640043363.9001338.index')
+    index = InvertedIndex(None, posting_list_type,
+                          'cache/index/1640043363.9001338.index')
     print("retrieved index: ", index.inverted_index)
     print()
 
@@ -196,5 +195,3 @@ if __name__ == '__main__':
     print(f"result: {matches}")
     print()
     print("index: ", index.inverted_index)
-
-    
