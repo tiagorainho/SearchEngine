@@ -187,32 +187,36 @@ class Main:
 
 
 if __name__ == '__main__':
-    #cProfile.run('Main().main()')
-    Main().main()
-
+    cProfile.run('Main().main()')
+    #Main().main()
     exit(0)
 
     stop_words = 'stop_words.txt'
     min_token_length = 0
     language = None
-    texts = ['ola bem bem, curto bue de escrever ola',
-             " e tu? ta bem td fixe oi oi ola cnt", "kkk oi haha oafahfai fuah ahfa hauf uawfh a"]
-    search_terms = "oi ola tudo kkk"
+    # texts = ['ola bem bem, curto bue de escrever ola',
+    #          " e tu? ta bem td cnt", "kkk oi haha ola"]
+    texts = ['this rock album is amazing', 'greatest rock album', 'best folk cd']
+    search_terms = "greatest rock album"
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
     ranking_method = RankingMethod.BM25
-    ranker = RankerFactory(ranking_method)(posting_list_type, 0.75, 0.5)
+
+    ranker = RankerFactory(ranking_method)(posting_list_type, k=1.2, b=0.75)
+
+
+    
 
     print("------------ Indexing -------------")
-
+    
     t1 = time.perf_counter()
     indexer = Spimi(ranker=ranker, max_ram_usage=max_ram, max_block_size=max_block_size,
                     auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type)
 
-    tokenizer = Tokenizer(min_token_length, stop_words, language)
+    # tokenizer = Tokenizer(min_token_length, stop_words, language)
     for i, parsed_text in enumerate(texts):
-        tokens = tokenizer.tokenize(parsed_text)
+        tokens = parsed_text.split(' ')
         text = ascii_letters[i]
 
         indexer.add_document(doc_id=text, tokens=tokens)
@@ -225,17 +229,15 @@ if __name__ == '__main__':
     indexer.clear_blocks()
 
     print(f'whole indexing took: {t2-t1} seconds')
-
+    
     print("\n------------ Searching -------------")
 
     t1 = time.perf_counter()
     index = InvertedIndex(None, posting_list_type,
-                          'cache/index/1640048848.117843.index')
-    print("retrieved index: ", index.inverted_index)
-    print()
+                          'cache/index/1640139271.293256.index')
 
     tokenizer = Tokenizer(min_token_length, stop_words, language)
-    tokens = tokenizer.tokenize(search_terms)
+    tokens = search_terms.split(' ')#tokenizer.tokenize(search_terms)
     matches = index.search(tokens, 10, ranker, show_score=True)
     t2 = time.perf_counter()
     print(f'whole searching took: {t2-t1} seconds')

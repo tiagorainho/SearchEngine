@@ -38,10 +38,11 @@ class InvertedIndex:
             # get pos-processing metadata
             file.seek(0, os.SEEK_END)
             self.metadata_end = file.tell()
-            try:
+            try: # melhorar isto para ser mais rapido
+                self.metadata_end = file.tell() - 2
                 file.seek(file.tell() - 2, os.SEEK_SET)
                 while file.read(1) != '\n':
-                    self.metadata_end -= 2
+                    self.metadata_end = file.tell() - 2
                     file.seek(file.tell() - 2, os.SEEK_SET)
             except Exception:
                 raise Exception("Error fetching pos-processing metadata")
@@ -64,7 +65,6 @@ class InvertedIndex:
     def search(self, terms: List[str], n:int, ranker:Ranker, show_score:bool=False) -> List[int] or List[Tuple[int, float]]:
         if ranker == None:
             ranker = Ranker(self.posting_list_class().posting_type)
-
         ranker.load_metadata(self.metadata)
         term_to_posting_lists = self.light_search(terms, ranker.load_posting_list)
         results = ranker.order(term_to_posting_lists)[:n]
@@ -74,7 +74,6 @@ class InvertedIndex:
 
     def light_search(self, terms: List[str], load_posting_list_func:FunctionType) -> Dict[str, PostingList]:
         matches = {term:None for term in terms}
-
         for term in terms:
             if term in self.inverted_index:
                 posting_list:PostingList = self.inverted_index.get(term)

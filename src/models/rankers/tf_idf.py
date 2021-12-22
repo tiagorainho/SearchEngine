@@ -125,7 +125,7 @@ class TF_IDF_Ranker(Ranker):
         return 1 + math.log10(tf)
 
     def calculate_idf(self, posting_list: PostingList):
-        return round(math.log(len(self.documents_length)/len(posting_list.posting_list)), 3)
+        return round(math.log10(len(self.documents_length)/len(posting_list.posting_list)), 3)
 
     @staticmethod
     def calculate_weights(tfs):
