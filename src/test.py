@@ -23,19 +23,18 @@ if __name__ == '__main__':
     stop_words = 'stop_words.txt'
     min_token_length = 0
     language = None
-    texts = ['good games for kids', 'good old games games', 'haha lols are funny']
-    search_terms = "good old games games"
-    # texts = ['this rock album is amazing', 'greatest rock album', 'best folk cd']
-    # search_terms = "greatest rock album"
+    texts = ['this rock album is amazing', 'greatest rock album', 'best folk cd']
+    search_terms = "greatest rock album"
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
     ranking_method = RankingMethod.TF_IDF
+    tf_idf_schema = 'bnc.ltc'
     n_results = 3
     bm25_k = 1.2
     bm25_b = 0.75
 
-    ranker = RankerFactory(ranking_method)(posting_list_type, k=bm25_k, b=bm25_b)
+    ranker = RankerFactory(ranking_method)(posting_list_type, schema=tf_idf_schema, k=bm25_k, b=bm25_b)
 
     print("------------ Indexing -------------")
     
@@ -51,14 +50,16 @@ if __name__ == '__main__':
         'doc_mapping': DOC_MAPPING_FILE
     })
 
+    counter:int = 0
     with open(DOC_MAPPING_FILE, 'w', encoding='utf-8') as mapping_file:
 
         tokenizer = Tokenizer(min_token_length, stop_words, language)
-        for i, text in enumerate(texts):
+        for text in texts:
             tokens = text.split(' ') # tokenizer.tokenize(text)
-            doc_id = ascii_letters[i]
-            indexer.add_document(doc_id=i, tokens=tokens)
-            mapping_file.write(f'{i} {doc_id}\n')
+            doc_id = ascii_letters[counter]
+            indexer.add_document(doc_id=counter, tokens=tokens)
+            mapping_file.write(f'{counter} {doc_id}\n')
+            counter += 1
 
         index = indexer.construct_index(OUTPUT_INDEX)
     t2 = time.perf_counter()

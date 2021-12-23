@@ -43,7 +43,7 @@ gzip file.csv
 
 Create the index
 ```bash
-python3 src/indexer.py --stop-words stop_words.txt --min-token-length 3 --language english --max-block-size 50000 --max-ram 95 --documents datasets/example.gz --posting-list-type frequency --ranker BM25
+python3 src/indexer.py --stop-words stop_words.txt --min-token-length 3 --language english --max-block-size 50000 --max-ram 95 --documents datasets/example.gz --posting-list-type frequency --ranker TF_IDF --schema lnc.ltc
 ```
 Search in the index interactively
 ```bash
@@ -51,7 +51,7 @@ python3 src/searcher.py --search-index cache/index/result.index --n 10
 ```
 or search with only one query
 ```bash
-python3 src/searcher.py --search-index cache/index/result.index --n 10 --query could you recommend me your favorite game ?
+python3 src/searcher.py --search-index cache/index/result.index --n 10 --query could you recommend me your favorite game
 ```
 
 ## Content
@@ -188,6 +188,8 @@ To use the newly created Ranker in the indexer, in this case SPIMI, add the rank
 ranker = RankerFactory(RankingMethod.BM25)
 indexer = Spimi(posting_type=PostingType.Frequency, ranker=ranker)
 ```
+
+An example for versatility was implemented in the ``TF-IDF ranker``, where we can provide schemas to use inside the class. 3 functions where implemented to calculate the scores of documents but each function was used twice. 2 of the previous 3 functions use other 3 functions and the other uses 2, therefore, $ 3\times{3\times{2}} = 18 $ combinations are possible.
 
 ## Results
 

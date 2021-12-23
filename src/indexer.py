@@ -10,16 +10,18 @@ from models.posting_list import PostingType
 from models.spimi import Spimi
 from models.tokenizer import Tokenizer
 from argparse import ArgumentParser
+import os
 
+current_time = time.time()
 BLOCK_DIR = 'cache/blocks'
-OUTPUT_INDEX = f'cache/index/{time.time()}.index'
-DOC_MAPPING_FILE = 'cache/docs_mapping.txt'
+OUTPUT_INDEX = f'cache/index/{current_time}.index'
+DOC_MAPPING_FILE = f'cache/mappings/docs_mapping_{current_time}.map'
 
 
-def index(stop_words,min_token_length,language,documents,posting_list_type,max_block_size,max_ram,ranking_method,bm25_k,bm25_b):
+def index(stop_words,min_token_length,language,documents,posting_list_type,max_block_size,max_ram,ranking_method,schema,bm25_k,bm25_b):
     ranker = None
     if ranking_method != None:
-        ranker = RankerFactory(ranking_method)(posting_list_type, k=bm25_k, b=bm25_b)
+        ranker = RankerFactory(ranking_method)(posting_list_type, schema=schema, k=bm25_k, b=bm25_b)
 
     indexer = Spimi(ranker=ranker, max_ram_usage=max_ram, max_block_size=max_block_size,
                 auxiliary_dir=BLOCK_DIR, posting_type=posting_list_type)
@@ -34,6 +36,7 @@ def index(stop_words,min_token_length,language,documents,posting_list_type,max_b
 
     tokenizer = Tokenizer(min_token_length, stop_words, language)
 
+    counter:int = 0
     with open(DOC_MAPPING_FILE, 'w', encoding='utf-8') as mapping_file:
 
         for document in documents:
@@ -43,10 +46,11 @@ def index(stop_words,min_token_length,language,documents,posting_list_type,max_b
             print(f"Start {str(posting_list_type).lower().replace('postingtype.','')} indexing...")
             
             start = time.perf_counter()
-            for i, (doc_id, parsed_text) in enumerate(parser_generator):
+            for doc_id, parsed_text in parser_generator:
                 tokens = tokenizer.tokenize(parsed_text)
-                indexer.add_document(doc_id=i, tokens=tokens)
-                mapping_file.write(f'{i} {doc_id}\n')
+                indexer.add_document(doc_id=counter, tokens=tokens)
+                mapping_file.write(f'{counter} {doc_id}\n')
+                counter += 1
                 
             index = indexer.construct_index(OUTPUT_INDEX)
             end = time.perf_counter()
@@ -137,8 +141,20 @@ def parse_args():
         required=False,
         default=0.5
     )
+    arg_parser.add_argument(
+        "--schema",
+        type=str,
+        dest="schema",
+        help="schema for the TF-IDF Ranker",
+        required=False,
+        default='lnc.ltc'
+    )
     return arg_parser.parse_args()
 
 if __name__ == '__main__':
+    # create the auxiliary directories when they do not exist
+    for dir in ['blocks', 'index', 'mappings']:
+        os.makedirs(f"cache/{dir}", exist_ok=True)
+
     args = parse_args()
-    index(args.stop_words,args.min_token_length,args.language,args.documents,args.posting_list_type,args.max_block_size,args.max_ram,args.ranking_method,args.bm25_k,args.bm25_b)
+    index(args.stop_words,args.min_token_length,args.language,args.documents,args.posting_list_type,args.max_block_size,args.max_ram,args.ranking_method,args.schema,args.bm25_k,args.bm25_b)
