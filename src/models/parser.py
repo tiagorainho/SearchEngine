@@ -1,3 +1,7 @@
+# Authors:
+# Tiago Rainho - 92984
+# Vasco Sousa  - 93049
+
 from typing import Dict, Set
 from pathlib import Path
 import csv

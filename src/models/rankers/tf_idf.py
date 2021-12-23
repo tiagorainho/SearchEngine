@@ -1,3 +1,7 @@
+# Authors:
+# Tiago Rainho - 92984
+# Vasco Sousa  - 93049
+
 
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Tuple
@@ -22,6 +26,10 @@ class TF_IDF_Ranker(Ranker):
                 f'{ posting_type } not supported for {self.__class__}')
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
+    
+    @staticmethod
+    def load_tiny(line: str):
+        return float(line)
 
     def load_metadata(self, metadata: Dict[str, str]):
         # check if is the same ranker, posting list, etc
@@ -56,9 +64,11 @@ class TF_IDF_Ranker(Ranker):
             if posting_list == None: continue
 
             docs: List[int] = posting_list.get_documents()
+
+            idf = posting_list.tiny
             for doc in docs:
                 # query
-                ltc = (tf / sqrt_weights) * posting_list.idf
+                ltc = (tf / sqrt_weights) * idf
                 # documents
                 lnc = posting_list.tf_weight[doc]
 
@@ -66,12 +76,17 @@ class TF_IDF_Ranker(Ranker):
         
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
+    def merge_calculations(self, posting_list: PostingList):
+        posting_list.idf = self.calculate_idf(posting_list)
+    
+    def tiny_repr(self, posting_list: PostingList):
+        return str(posting_list.idf)
+
     def document_repr(self, posting_list: PostingList):
         return ' '.join([f'{doc_id}-{freq}/{round(posting_list.tf_weight[doc_id], 3)}' for doc_id, freq in posting_list.posting_list.items()])
 
     def term_repr(self, posting_list: PostingList):
-        idf = self.calculate_idf(posting_list)
-        return f'{self.document_repr(posting_list)}#{idf}'
+        return f'{self.document_repr(posting_list)}'
 
     @staticmethod
     def posting_list_init(posting_list: PostingList):

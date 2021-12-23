@@ -1,3 +1,7 @@
+# Authors:
+# Tiago Rainho - 92984
+# Vasco Sousa  - 93049
+
 
 from collections import defaultdict
 from typing import DefaultDict, Dict, List
@@ -17,8 +21,15 @@ class BM25_Ranker(Ranker):
         super().__init__(posting_type)
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
-        self.k = kwargs['k']
-        self.b = kwargs['b']
+        self.k = kwargs['k'] if 'k' in kwargs else None
+        self.b = kwargs['b'] if 'b' in kwargs else None
+    
+    @staticmethod
+    def load_tiny(line: str):
+        return float(line)
+    
+    def merge_calculations(self, posting_list: PostingList):
+        posting_list.idf = self.calculate_idf(posting_list)
 
     def order(self, term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
         query = list(term_to_posting_list.keys())
@@ -39,7 +50,7 @@ class BM25_Ranker(Ranker):
                 for doc in docs:
                     freq = posting_list.posting_list[doc]
                     
-                    idf = posting_list.idf
+                    idf = posting_list.tiny
                     tf = (freq * (self.k + 1)) / (freq + self.k * (1 - self.b + self.b * dl_div_avgdl[doc]))
                     
                     scores[doc] += idf * tf
@@ -50,13 +61,17 @@ class BM25_Ranker(Ranker):
         return ' '.join([f'{doc_id}-{freq}' for doc_id, freq in posting_list.posting_list.items()])
 
     def term_repr(self, posting_list: PostingList):
-        idf = self.calculate_idf(posting_list)
-        return f'{self.document_repr(posting_list)}#{idf}'
+        return f'{self.document_repr(posting_list)}'
+
+    def tiny_repr(self, posting_list: PostingList):
+        return str(posting_list.idf)
 
     def metadata(self) -> Dict[str, object]:
         return {
             'ranker': 'BM25',
-            'posting_class': 'frequency'
+            'ranker_posting_class': 'frequency',
+            'k': self.k,
+            'b': self.b
         }
 
     def pos_processing(self) -> Dict[str, object]:
@@ -70,20 +85,15 @@ class BM25_Ranker(Ranker):
         # check if is the same ranker, posting list, etc
         if metadata['ranker'] != 'BM25':
             raise Exception(f'Ranker "{ metadata["ranker"] }" not compatible')
+        if self.k == None: self.k = float(metadata['k'])
+        if self.b == None: self.b = float(metadata['b'])
         self.metadata = metadata
 
     def load_posting_list(self, posting_list_class: PostingList.__class__, line: str) -> PostingList:
 
         posting_list = self.posting_class()
 
-        parts = line.split('#')
-        posting_list_str = parts[0]
-
-        if len(parts) > 1:
-            idf = parts[1]
-            posting_list.idf = float(idf)
-
-        for posting in posting_list_str.split(' '):
+        for posting in line.split(' '):
             doc_id, freq = tuple(posting.split('-'))
             posting_list.posting_list[doc_id] = int(freq)
 

@@ -1,3 +1,7 @@
+# Authors:
+# Tiago Rainho - 92984
+# Vasco Sousa  - 93049
+
 from __future__ import annotations
 from typing import List, Set
 from models.posting_list import PostingList, PostingType

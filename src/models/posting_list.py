@@ -1,3 +1,7 @@
+# Authors:
+# Tiago Rainho - 92984
+# Vasco Sousa  - 93049
+
 from __future__ import annotations
 from typing import List
 from enum import Enum
@@ -41,7 +45,7 @@ posting_list_types = {
 }
 
 def PostingListFactory(posting_type:PostingType) -> PostingList:
-    return posting_list_types[posting_type]
+    return posting_list_types.get(posting_type, PostingList)
 
 if __name__ == '__main__':
     pass

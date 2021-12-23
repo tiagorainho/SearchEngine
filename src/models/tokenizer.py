@@ -1,3 +1,7 @@
+# Authors:
+# Tiago Rainho - 92984
+# Vasco Sousa  - 93049
+
 from pathlib import Path
 from typing import Dict, Set
 from nltk.stem.snowball import SnowballStemmer

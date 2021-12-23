@@ -1,10 +1,14 @@
+# Authors:
+# Tiago Rainho - 92984
+# Vasco Sousa  - 93049
 
+
+import os
 from types import FunctionType
 from typing import Dict, List, Tuple
 from models.posting_list import PostingList, PostingListFactory, PostingType
-from models.ranker import Ranker
+from models.ranker import Ranker, RankerFactory, RankingMethod
 import json
-import os
 import io
 
 
@@ -14,53 +18,64 @@ class InvertedIndex:
     posting_list_class: PostingList
     delimiter: str = ' '
     metadata: Dict[str, object]
-    metadata_start: int
-    metadata_end: int
+    index_start: int
+    index_end: int
+    tiny_dict: Dict[str, object]
 
-    # tratar de deixar posting lists em memoria com base nas pesquisas feitas
 
-    def __init__(self, inverted_index: Dict[str, PostingList], posting_type: PostingType, output_path: str = None) -> None:
+    def __init__(self, inverted_index: Dict[str, PostingList], posting_type: PostingType=None, output_path: str = None) -> None:
         self.inverted_index = inverted_index if inverted_index != None else dict()
-        self.posting_list_class = PostingListFactory(posting_type)
         self.file = output_path
         if inverted_index == None and output_path != None:
             self.load_dictionary(output_path)
+            self.posting_list_class = PostingListFactory(PostingType(self.metadata['posting_class']))
+            ranker:Ranker = Ranker(posting_type)
+            if 'ranker' in self.metadata:
+                ranker = RankerFactory(RankingMethod(self.metadata['ranker']))
+            self.load_tiny_dictionary(f'{output_path}.tiny', ranker)
+        if posting_type != None: self.posting_list_class = PostingListFactory(posting_type)
+
+    
+    def load_tiny_dictionary(self, file_name:str, ranker:Ranker):
+        self.tiny_dict = dict()
+        with open(file_name, "r", encoding='utf-8', errors='ignore') as file:
+            for line in file:
+                term, obj = tuple(line.split(' ', maxsplit=1))
+                self.tiny_dict[term] = ranker.load_tiny(obj)
 
     def load_dictionary(self, file_name:str):
         self.metadata = dict()
 
         with open(file_name, "r", encoding='utf-8', errors='ignore') as file:
+            num_lines = 0
+            for line in file:
+                num_lines += 1
+
             # get pre-processing metadata
+            file.seek(0)
             line = file.readline()
             self.metadata = json.load(io.StringIO(line))
-            self.metadata_start = file.tell()
+            self.index_start = file.tell()
 
-            # get pos-processing metadata
-            file.seek(0, os.SEEK_END)
-            self.metadata_end = file.tell()
-            try: # melhorar isto para ser mais rapido
-                self.metadata_end = file.tell() - 2
-                file.seek(file.tell() - 2, os.SEEK_SET)
-                while file.read(1) != '\n':
-                    self.metadata_end = file.tell() - 2
-                    file.seek(file.tell() - 2, os.SEEK_SET)
-            except Exception:
-                raise Exception("Error fetching pos-processing metadata")
-            
-            posprocessing_metadata = file.readline()
-            metadata_pos_processing = json.load(io.StringIO(posprocessing_metadata))
-
-            for key, value in metadata_pos_processing.items():
-                self.metadata[key] = value
-
-            file.seek(self.metadata_start)
-            curr_pos = self.metadata_start
-            while curr_pos >= self.metadata_start and curr_pos < self.metadata_end:
+            # read posting lists
+            file.seek(self.index_start)
+            i=0
+            while file:
                 line = file.readline()
                 term_postinglist = line.split(self.delimiter, 1)
                 term = term_postinglist[0]
                 self.inverted_index[term] = None
-                curr_pos = file.tell()
+                if i+3 >= num_lines:
+                    self.index_end = file.tell()
+                    break
+                i += 1
+
+            # get pos-processing metadata
+            file.seek(self.index_end)
+            posprocessing_metadata = file.readline()
+            metadata_pos_processing = json.load(io.StringIO(posprocessing_metadata))
+            for key, value in metadata_pos_processing.items():
+                self.metadata[key] = value
     
     def search(self, terms: List[str], n:int, ranker:Ranker, show_score:bool=False) -> List[int] or List[Tuple[int, float]]:
         if ranker == None:
@@ -71,6 +86,46 @@ class InvertedIndex:
         if not show_score:
             results = [tpl[0] for tpl in results]
         return results
+
+    def fetch_terms(self, terms: List[object], file_name:str, start:int=0, end:int=None) -> Dict[object, str]:
+
+        matches:Dict[str, str] = dict()
+
+        # fetch the terms from disk
+        with open(file_name, "r", encoding='utf-8', errors='ignore') as file:
+            if end == None:
+                file.seek(0, os.SEEK_END)
+                end = file.tell()
+                file.seek(start)
+            
+            for term in terms:
+                min = start
+                max = end
+                file.seek(min)
+                line = file.readline()
+                term_type = type(term)
+                line_term = term_type(line.split(self.delimiter)[0])
+
+                while term != line_term and max - min > 1:
+                    middle = int((max + min) / 2)
+                    file.seek(middle)
+                    file.readline()
+                    line = file.readline()
+
+                    try:
+                        line_term, line_posting_list = line.split(self.delimiter, 1)
+                        line_term = term_type(line_term)
+                    except Exception:
+                        continue
+                    
+                    if term < line_term:
+                        max = middle
+                    elif term > line_term:
+                        min = middle
+
+                if term == line_term:
+                    matches[term] = line_posting_list.replace('\n', '')
+        return matches
 
     def light_search(self, terms: List[str], load_posting_list_func:FunctionType) -> Dict[str, PostingList]:
         matches = {term:None for term in terms}
@@ -89,31 +144,12 @@ class InvertedIndex:
         if len(terms) == 0: return matches
 
         # fetch the terms that are in the index file but not in memory and store them
-        with open(self.file, "r", encoding='utf-8', errors='ignore') as file:
-            
-            for term in terms:
-                min = self.metadata_start
-                max = self.metadata_end
-                file.seek(min)
-                line = file.readline()
-                line_term = line.split(self.delimiter)[0]
-
-                while term != line_term and max - min > 1:
-                    middle = int((max + min) / 2)
-                    file.seek(middle)
-                    file.readline()
-                    line = file.readline()
-                    line_term, line_posting_list = line.split(self.delimiter, 1)
-
-                    if term < line_term:
-                        max = middle
-                    elif term > line_term:
-                        min = middle
-
-                if term == line_term:
-                    posting_list = load_posting_list_func(self.posting_list_class, line_posting_list)
-                    matches[term] = posting_list
-                    self.inverted_index[term] = posting_list
+        fetched_terms = self.fetch_terms(terms, self.file, self.index_start, self.index_end)
+        for term, line in fetched_terms.items():
+            posting_list = load_posting_list_func(self.posting_list_class, line)
+            matches[term] = posting_list
+            self.inverted_index[term] = posting_list
+            self.inverted_index[term].tiny = self.tiny_dict.get(term, None)
 
         return matches
 

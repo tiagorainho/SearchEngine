@@ -1,3 +1,7 @@
+# Authors:
+# Tiago Rainho - 92984
+# Vasco Sousa  - 93049
+
 from io import FileIO
 from typing import Dict, Generator, List, Tuple
 from models.index import InvertedIndex
@@ -213,15 +217,31 @@ class Spimi():
         :return: dictionary with all the terms inserted in the final index
         """
         min_term_generator = self.min_k_merge_generator(input_paths)
-        index: Dict[str, None] = dict()
+        # index: Dict[str, None] = dict()
 
+        tiny_file = open(Path(f"{output_path}.tiny").resolve(), 'w')
         with open(Path(output_path).resolve(), 'a') as output_file:
             # get mininum terms and their respective posting list
             for term, posting_list in min_term_generator:
-                output_file.write(f"{term} {self.ranker.term_repr(posting_list)}\n")
-                index[term] = posting_list # None    # DEIXAR NONE -------------------------------------------------------------------------------------------------------------------
+                # ranker calculations with the whole posting list
+                self.ranker.merge_calculations(posting_list)
 
-        return InvertedIndex(index, self.posting_type, output_path)
+                # write to output file and get index
+                output_file.write(f"{term} {self.ranker.term_repr(posting_list)}\n")
+                # index[term] = None
+
+                # handle with tiny representation
+                tiny_repr = self.ranker.tiny_repr(posting_list)
+                if tiny_repr != None:
+                    tiny_file.write(f'{term} {tiny_repr}\n')
+
+        # remove tiny when not used
+        if tiny_file.tell() == 0:
+            os.remove(tiny_file.name)
+        else:
+            tiny_file.close()
+
+        # return InvertedIndex(index, self.posting_type, output_path)
 
     def construct_index(self, ouput_path: str = 'output.index'):
         """

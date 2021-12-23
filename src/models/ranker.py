@@ -1,3 +1,7 @@
+# Authors:
+# Tiago Rainho - 92984
+# Vasco Sousa  - 93049
+
 
 from __future__ import annotations
 from enum import Enum
@@ -6,8 +10,8 @@ from models.posting_list import PostingList, PostingType
 
 
 class RankingMethod(Enum):
-    TF_IDF = 'tf_idf'
-    BM25 = 'bm25'
+    TF_IDF = 'TF_IDF'
+    BM25 = 'BM25'
 
 
 class Ranker:
@@ -33,9 +37,19 @@ class Ranker:
 
     def document_repr(self, posting_list: PostingList):
         return str(posting_list)
+    
+    def merge_calculations(self, posting_list: PostingList):
+        pass
 
     def term_repr(self, posting_list: PostingList):
         return str(posting_list)
+    
+    def tiny_repr(self, posting_list: PostingList):
+        return None
+    
+    @staticmethod
+    def load_tiny(line: str):
+        return line
 
     def load_posting_list(self, posting_list_class: PostingList.__class__, line: str) -> PostingList:
         return posting_list_class.load(line)
@@ -60,7 +74,7 @@ ranking_methods = {
 
 
 def RankerFactory(method: RankingMethod) -> Ranker:
-    return ranking_methods[method]
+    return ranking_methods.get(method, Ranker)
 
 
 if __name__ == '__main__':
