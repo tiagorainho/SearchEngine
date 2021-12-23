@@ -258,12 +258,12 @@ The search result files are in inside the ``results``folder.
 | Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time | Files                    |
 | :----------------------- | ---------------- | ------------------------- | ----------- | ------------------------ |
 | Digital_Music_Purchase   | 181.83 sec       | 0.0045 ms                 | 0.130 ms    | tf_idf_digital_music.txt |
-| Music                    | 1.6 sec       | 0.0044 ms             | 0.745 ms    | tf_idf_music.txt         |
+| Music                    | 1490.10 sec       | 0.0044 ms             | 0.745 ms    | tf_idf_music.txt         |
 
 #### BM25 Ranker
 
 | Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time | Files                  |
 | :----------------------- | ---------------- | --------------------- | ----------- | ---------------------- |
-| Digital_Music_Purchase   | 120.21 sec       | 0.0045 ms             | 0.130 ms    | bm25_digital_music.txt |
-| Music                    | 120.6 sec       | 0.0044 ms             | 0.745 ms    | bm25_music.txt         |
+| Digital_Music_Purchase   | 115.65 sec       | 0.0045 ms             | 0.130 ms    | bm25_digital_music.txt |
+| Music                    | 787.02 sec       | 0.0044 ms             | 0.745 ms    | bm25_music.txt         |
 

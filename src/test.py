@@ -29,7 +29,7 @@ if __name__ == '__main__':
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
     ranking_method = RankingMethod.TF_IDF
-    tf_idf_schema = 'bnc.ltc'
+    tf_idf_schema = 'lnc.ltc'
     n_results = 3
     bm25_k = 1.2
     bm25_b = 0.75
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     ranker = RankerFactory(RankingMethod(index.metadata['ranker']))(PostingType(index.metadata['posting_class']))
     
-    tokenizer = Tokenizer(min_token_length, stop_words, language)
+    tokenizer = Tokenizer(index.metadata['min_token_length'], index.metadata['stop_words'], index.metadata['language'])
     tokens = search_terms.split(' ') # tokenizer.tokenize(search_terms)
 
     #  get the seach result

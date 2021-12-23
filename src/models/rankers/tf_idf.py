@@ -168,7 +168,10 @@ class TF_IDF_Ranker(Ranker):
 
     def uniform_tf(self, tf, alg):
         if alg == 'l':
-            return 1 + math.log(tf) if tf > 0 else 0
+            try:
+                return 1 + math.log(tf) if tf > 0 else 0
+            except ValueError:
+                return 0
         elif alg == 'b':
             return 1 if tf > 0 else 0
         elif alg == 'n':
@@ -198,4 +201,4 @@ class TF_IDF_Ranker(Ranker):
 
             return normalized_weights
         elif alg == 'n':
-            return {term: 1 for term, tf in tfs.items()}
+            return {term: 1 for term in tfs.keys()}
