@@ -18,10 +18,10 @@ def parse_args():
         required=False
     )
     arg_parser.add_argument(
-        "--search-terms",
+        "--query",
         nargs="*",
-        dest="search_terms",
-        help="Term to search for",
+        dest="query",
+        help="Terms to search for",
         required=False
     )
     arg_parser.add_argument(
@@ -67,12 +67,12 @@ def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=F
 
 if __name__ == '__main__':
     args = parse_args()
-    if args.search_terms == None:
+    if args.query == None:
         while(True):
-            search_terms = input("Search (exit 'q'): ").split(' ')
-            if len(search_terms) == 1 and search_terms[0].lower() == 'q': break
-            results = search(args.search_index, search_terms, args.n_results)
+            query = input("Search (exit interactive search with 'q'): ").split(' ')
+            if len(query) == 1 and query[0].lower() == 'q': break
+            results = search(args.search_index, query, args.n_results)
             print(results)
     else:
-        results = search(args.search_index, args.search_terms, args.n_results)
+        results = search(args.search_index, args.query, args.n_results)
         print(results)

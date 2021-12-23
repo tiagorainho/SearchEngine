@@ -8,16 +8,6 @@
 - [Content](#content)
 - [Results](#results)
 
-## Motivation
-
-When there is a need to search terms from multiple large documents, inevitably the problem of long delays during fetching of documents from a list of terms will occur, this project aims to speed up that process while increasing other measures of quality in the process by indexing the *text corpus*.
-
-## Project Organization
-
-This project is an **Information Retrieval** assignment and will be composed by 3 different steps:
-- [x] Parser, Tokenizer, Indexer steps and light searcher
-- [ ] Complex Searcher
-- [ ] Other
 
 ## Install Dependencies
 
@@ -46,15 +36,23 @@ pip install -r requirements.txt
 
 ## How to use
 
-Create the index
+If the file to use is not .gz, then convert it
 ```bash
-python3 src/main.py --stop-words stop_words.txt --min-token-length 3 --language english --max-block-size 50000 --max-ram 95 --posting-list-type positional --documents datasets/example.csv
-```
-Search in the index
-```bash
-python3 src/main.py --search-index cache/index/index_file.index --posting-list-type positional --search-terms good to know you
+gzip file.csv
 ```
 
+Create the index
+```bash
+python3 src/indexer.py --stop-words stop_words.txt --min-token-length 3 --language english --max-block-size 50000 --max-ram 95 --documents datasets/example.gz --posting-list-type frequency --ranker BM25
+```
+Search in the index interactively
+```bash
+python3 src/searcher.py --search-index cache/index/result.index --n 10
+```
+or search with only one query
+```bash
+python3 src/searcher.py --search-index cache/index/result.index --n 10 --query could you recommend me your favorite game ?
+```
 
 ## Content
 
@@ -87,7 +85,7 @@ In order to improve stemmer performance, every token that goes though the stemme
 
 ### Indexer
 
-This is an superclass of indexers, a SPIMI was used because it was required by the assignment but a BSBI (Block sort-based Indexing) could have been used as well.
+This is an superclass of indexers, a SPIMI was used because it was required by the assignment but a BSBI (Block Sort-Based Indexing) could have been used as well.
 
 #### SPIMI (Single Pass In Memory Indexing)
 
@@ -102,11 +100,13 @@ When the ``add_document()`` method is being run, there is a need to calculate th
 
 The ``construct_index()`` is the most complex method, this creates the final index which are all the merged blocks that will be written in disk. In order to facilitate the job for developers the ``min_k_merge_generator()`` method was implemented, this method returns a generator that abstracts all the accessed files by returning the least valuable term of all the blocks and the already merged posting list, this method proved very efficient at abstracting this complex step.
 Inside the lastly mentioned method, we can find the list of generators for each file, these generators provide a buffer of lines based on the *maximum block size* and the *number of temporary blocks*.
-The least valuable term of each block is added in a *priority queue* and if there is more than one with the same lower value, then those posting lists are merged and yielded. After that we just have to repopulate both the lines buffer and heap, and then it can restart the process until there is no more lines in every generator.
+The least valuable term of each block is added in a *priority queue* and if there is more than one with the same lower value, then those posting lists are merged and yielded. After that we just have to repopulate both the lines buffer and heap. Then it can restart the process until there is no more lines in every generator.
 
 ### Inverted Index
 
 The inverted index is characterized by having a dictionary in which the key is the term and the value is a postings list, because of this, an abstraction was created that improves the capabilities of PostingList creation by simplifying its integration.
+
+#### Posting List
 Multiple Posting List types are available out of the box such as **Boolean**, **Frequency** and **Positional** Posting List. These classes make it easy for anyone to use any kind of different index types and to be able to test new ideas. To create a new Posting List, all it is needed is to extend the PostingList class in the ``src/models/posting_list.py`` file, then the following methods must be implemented:
 ```python
 def __init__(self)->None:
@@ -132,11 +132,57 @@ posting_list_types:Dict[PostingType, PostingList] = {
 ```
 To use the newly created PostingList in the indexer, in this case SPIMI, add the posting type in the instantiation.
 ```python
-indexer = Spimi(max_ram_usage=95, max_block_size=50000, auxiliary_dir=BLOCK_DIR, posting_type=PostingType.POSITIONAL)
+indexer = Spimi(posting_type=PostingType.POSITIONAL)
 ```
 After only this simple steps, we have a functional index with a completly different PostingList implementation.
 
+#### Search
 A ``light_search()`` method was also implemented to add searchable capabilities, it is an algorithm that if the searched term is not already inside the Inverted Index, then an access to the main index file is performed, the search in this file is done by RAF (Random Access File) in order to do a binary search since the terms are already sorted, this results in $ O(log_{2}{n}) $ complexity. In order to make the RAF work, the ``seek()`` method was used to point to a particular byte, then as we can not be assured that we are not reading already in the middle of the line, we read the next line to get a clean line that will be read after. This is fine because the first line would be tested at the beginning of the algorithm to ensure it is not the searched term.
+
+The previous method cared of proper ranking because would only provide us with the documents in which a term was found. This is not that useful because we would either get a lot of documents or probably none (feast of famine). For that reason, ``rankers`` are used to provide methods that improve the efficiency of returned documents.
+
+The default available rankers are ``TF-IDF`` and ``BM25`` and more can be created similary to the ``Posting Lists``. Extend the ``Ranker`` class found in ``src/models/ranker.py`` file and override the needed methods:
+```python
+    def __init__(self, posting_type: PostingType, *args, **kwargs):
+
+    def order(self, term_to_posting_list: Dict[str, PostingList]) -> List[Tuple[int, float]]:
+
+    def load_metadata(self, metadata: Dict[str, object]):
+    
+    def load_posting_list(self, posting_list_class: PostingList.__class__, line: str) -> PostingList:
+
+    def load_tiny(line: str):
+
+    def metadata(self) -> Dict[str, object]:
+
+    def pos_processing(self) -> Dict[str, object]:
+
+    def before_add_tokens(self, term_to_postinglist: Dict[str, PostingList], tokens: List[str], doc_id: int):
+
+    def after_add_tokens(self, term_to_postinglist: Dict[str, PostingList], tokens: List[str], doc_id: int):
+
+    def document_repr(self, posting_list: PostingList):
+    
+    def term_repr(self, posting_list: PostingList):
+    
+    def tiny_repr(self, posting_list: PostingList):
+
+    def merge_calculations(self, posting_list: PostingList):
+```
+
+Then add the new class to the Factory method like the previous:
+```python
+ranking_methods:Dict[RankingMethod, Ranker] = {
+    RankingMethod.TF_IDF: TF_IDF_Ranker,
+    RankingMethod.BM25: BM25_Ranker
+}
+```
+
+To use the newly created Ranker in the indexer, in this case SPIMI, add the ranker in the constructor.
+```python
+ranker = RankerFactory(RankingMethod.BM25)
+indexer = Spimi(posting_type=PostingType.Frequency, ranker=ranker)
+```
 
 ## Results
 
@@ -152,9 +198,9 @@ The arguments provided for the **index creation** are the following:
 
 
 All results were performed using a MacBookPro M1 with the following specs:
-- Apple M1, 8 core 3.2 GHz CPU
-- 16 GB Ram
-- 256 GB SSD
+- Apple Air M1
+- 8 GB Ram
+- 512 GB SSD
 
 
 ### Boolean Posting List
@@ -193,14 +239,26 @@ Data Structure where the document id links to a list of positions where the term
 | Books                    | 2.6 GB             | 4.33 GB         | 46.614 min       | 239              | 1 626 371   |
 
 
-### Light Search
+### Search
 
-The following table presents the statistics related to the search of the term **'hello'** using an index with **frequency** posting lists.
+The following table presents the statistics related to the search of the query list provided by the professor and using an index with ``frequency posting lists`` with both ``BM25`` and ``TF-IDF`` rankers.
 
-| Dataset                  | Searcher Startup Time | Search Time | Occurances |
-| :----------------------- | --------------------- | ----------- | ---------- |
-| Digital_Video_Games      | 0.0041 ms             | 0.469 ms    | 112        |
-| Digital_Music_Purchase   | 0.0045 ms             | 0.130 ms    | 1672       |
-| Music                    | 0.0044 ms             | 0.745 ms    | 14995      |
-| Books                    | 0.0045 ms             | 4.556 ms    | 7323       |
+**TF-IDF Results**
+
+| Dataset                  | Searcher Startup Time | Search Time | Files                    |
+| :----------------------- | --------------------- | ----------- | ------------------------ |
+| Digital_Video_Games      | 0.0041 ms             | 0.469 ms    | tf_idf_games.txt         |
+| Digital_Music_Purchase   | 0.0045 ms             | 0.130 ms    | tf_idf_digital_music.txt |
+| Music                    | 0.0044 ms             | 0.745 ms    | tf_idf_music.txt         |
+| Books                    | 0.0045 ms             | 4.556 ms    | tf_idf_book.txt          |
+
+
+**BM25 Results**
+
+| Dataset                  | Searcher Startup Time | Search Time | Files                  |
+| :----------------------- | --------------------- | ----------- | ---------------------- |
+| Digital_Video_Games      | 0.0041 ms             | 0.469 ms    | bm25_games.txt         |
+| Digital_Music_Purchase   | 0.0045 ms             | 0.130 ms    | bm25_digital_music.txt |
+| Music                    | 0.0044 ms             | 0.745 ms    | bm25_music.txt         |
+| Books                    | 0.0045 ms             | 4.556 ms    | bm25_books.txt         |
 

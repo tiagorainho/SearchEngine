@@ -31,9 +31,6 @@ class PostingList:
     def merge(posting_lists:List[PostingList])->PostingList:
         pass
 
-    def block_repr(self):
-        pass
-
 from models.posting_lists.boolean_posting_list import BooleanPostingList
 from models.posting_lists.frequency_posting_list import FrequencyPostingList
 from models.posting_lists.positional_posting_list import PositionalPostingList

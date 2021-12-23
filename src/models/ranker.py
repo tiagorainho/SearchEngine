@@ -67,7 +67,7 @@ class Ranker:
 from models.rankers.bm25 import BM25_Ranker
 from models.rankers.tf_idf import TF_IDF_Ranker
 
-ranking_methods = {
+ranking_methods:Dict[RankingMethod, Ranker] = {
     RankingMethod.TF_IDF: TF_IDF_Ranker,
     RankingMethod.BM25: BM25_Ranker
 }
