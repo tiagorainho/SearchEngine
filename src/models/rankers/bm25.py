@@ -31,8 +31,7 @@ class BM25_Ranker(Ranker):
     def merge_calculations(self, posting_list: PostingList):
         posting_list.idf = self.calculate_idf(posting_list)
 
-    def order(self, term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
-        query = list(term_to_posting_list.keys())
+    def order(self, query:List[str], term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
 
         tfs = dict()
         for token in query:
@@ -104,4 +103,4 @@ class BM25_Ranker(Ranker):
             self.documents_length[doc_id] = len(tokens)
 
     def calculate_idf(self, posting_list: PostingList):
-        return round(math.log10(len(self.documents_length)/len(posting_list.posting_list)), 3)
+        return round(math.log(len(self.documents_length)/len(posting_list.posting_list)), 3)

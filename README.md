@@ -5,7 +5,7 @@
 - [Project Organization](#project-organization)
 - [Install Dependencies](#install-dependencies)
 - [How to Use](#how-to-use)
-- [Content](#content)
+- [Tecnical Content](#content)
 - [Results](#results)
 
 
@@ -64,9 +64,13 @@ The following classes, their hierarchical structure and relevant features are th
         - [RAM Access Improvements](#ram-access-improvements)
         - [Final Index Construction](#final-index-construction)
 - [Inverted Index](#inverted-index)
-    - [Boolean Posting List](#boolean-posting-list)
-    - [Frequency Posting List](#frequency-posting-list)
-    - [Positional Posting List](#positional-posting-list)
+    - [Posting List](#posting-list)
+        - [Boolean Posting List](#boolean-posting-list)
+        - [Frequency Posting List](#frequency-posting-list)
+        - [Positional Posting List](#positional-posting-list)
+- [Ranker](#ranker)
+    - [TF-IDF](#tf-idf-ranker)
+    - [BM25](#bm25-ranker)
 
 
 ### Parser
@@ -136,8 +140,9 @@ indexer = Spimi(posting_type=PostingType.POSITIONAL)
 ```
 After only this simple steps, we have a functional index with a completly different PostingList implementation.
 
-#### Search
-A ``light_search()`` method was also implemented to add searchable capabilities, it is an algorithm that if the searched term is not already inside the Inverted Index, then an access to the main index file is performed, the search in this file is done by RAF (Random Access File) in order to do a binary search since the terms are already sorted, this results in $ O(log_{2}{n}) $ complexity. In order to make the RAF work, the ``seek()`` method was used to point to a particular byte, then as we can not be assured that we are not reading already in the middle of the line, we read the next line to get a clean line that will be read after. This is fine because the first line would be tested at the beginning of the algorithm to ensure it is not the searched term.
+### Ranker
+
+A ``light_search()`` method was also implemented in the ``InvertedIndex`` to add searchable capabilities, it is an algorithm that if the searched term is not already inside the Inverted Index, then an access to the main index file is performed, the search in this file is done by RAF (Random Access File) in order to do a binary search since the terms are already sorted, this results in $ O(log_{2}{n}) $ complexity. In order to make the RAF work, the ``seek()`` method was used to point to a particular byte, then as we can not be assured that we are not reading already in the middle of the line, we read the next line to get a clean line that will be read after. This is fine because the first line would be tested at the beginning of the algorithm to ensure it is not the searched term.
 
 The previous method cared of proper ranking because would only provide us with the documents in which a term was found. This is not that useful because we would either get a lot of documents or probably none (feast of famine). For that reason, ``rankers`` are used to provide methods that improve the efficiency of returned documents.
 
@@ -202,6 +207,7 @@ All results were performed using a MacBookPro M1 with the following specs:
 - 8 GB Ram
 - 512 GB SSD
 
+The values were calculated on the first delivery, now the speeds are even lower when doing the same thing. The time will also greatly depend on the ranker implementation.
 
 ### Boolean Posting List
 
@@ -241,24 +247,21 @@ Data Structure where the document id links to a list of positions where the term
 
 ### Search
 
-The following table presents the statistics related to the search of the query list provided by the professor and using an index with ``frequency posting lists`` with both ``BM25`` and ``TF-IDF`` rankers.
+The following table presents the statistics and search results related to the search of the query list provided by the professor and using an index with ``frequency posting lists`` with both ``BM25`` and ``TF-IDF`` rankers.
 
-**TF-IDF Results**
+The search result files are in inside the ``results``folder.
 
-| Dataset                  | Searcher Startup Time | Search Time | Files                    |
-| :----------------------- | --------------------- | ----------- | ------------------------ |
-| Digital_Video_Games      | 0.0041 ms             | 0.469 ms    | tf_idf_games.txt         |
-| Digital_Music_Purchase   | 0.0045 ms             | 0.130 ms    | tf_idf_digital_music.txt |
-| Music                    | 0.0044 ms             | 0.745 ms    | tf_idf_music.txt         |
-| Books                    | 0.0045 ms             | 4.556 ms    | tf_idf_book.txt          |
+#### TF-IDF Ranker
 
+| Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time | Files                    |
+| :----------------------- | ---------------- | ------------------------- | ----------- | ------------------------ |
+| Digital_Music_Purchase   | 181.83 sec       | 0.0045 ms                 | 0.130 ms    | tf_idf_digital_music.txt |
+| Music                    | 1.6 sec       | 0.0044 ms             | 0.745 ms    | tf_idf_music.txt         |
 
-**BM25 Results**
+#### BM25 Ranker
 
-| Dataset                  | Searcher Startup Time | Search Time | Files                  |
-| :----------------------- | --------------------- | ----------- | ---------------------- |
-| Digital_Video_Games      | 0.0041 ms             | 0.469 ms    | bm25_games.txt         |
-| Digital_Music_Purchase   | 0.0045 ms             | 0.130 ms    | bm25_digital_music.txt |
-| Music                    | 0.0044 ms             | 0.745 ms    | bm25_music.txt         |
-| Books                    | 0.0045 ms             | 4.556 ms    | bm25_books.txt         |
+| Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time | Files                  |
+| :----------------------- | ---------------- | --------------------- | ----------- | ---------------------- |
+| Digital_Music_Purchase   | 120.21 sec       | 0.0045 ms             | 0.130 ms    | bm25_digital_music.txt |
+| Music                    | 120.6 sec       | 0.0044 ms             | 0.745 ms    | bm25_music.txt         |
 

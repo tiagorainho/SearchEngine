@@ -82,7 +82,9 @@ class InvertedIndex:
             ranker = Ranker(self.posting_list_class().posting_type)
         ranker.load_metadata(self.metadata)
         term_to_posting_lists = self.light_search(terms, ranker.load_posting_list)
-        results = ranker.order(term_to_posting_lists)[:n]
+        results = ranker.order(terms, term_to_posting_lists)
+        if len(results) > n: results = results[:n]
+        
         if not show_score:
             results = [tpl[0] for tpl in results]
         return results

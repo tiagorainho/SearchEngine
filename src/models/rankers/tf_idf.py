@@ -13,6 +13,7 @@ class TF_IDF_Ranker(Ranker):
     documents_length: DefaultDict
     allowed_posting_types = [PostingType.FREQUENCY]
     posting_class: PostingList.__class__
+    schema: str
 
     """
     added attributes to PostingList:
@@ -26,6 +27,7 @@ class TF_IDF_Ranker(Ranker):
                 f'{ posting_type } not supported for {self.__class__}')
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
+        self.schema = kwargs['schema'] if 'schema' in kwargs else 'lnc.ltc'
     
     @staticmethod
     def load_tiny(line: str):
@@ -35,49 +37,51 @@ class TF_IDF_Ranker(Ranker):
         # check if is the same ranker, posting list, etc
         if metadata['ranker'] != 'TF_IDF':
             raise Exception(f'Ranker "{ metadata["ranker"] }" not compatible')
-        if metadata['posting_class'] != 'frequency':
-            raise Exception(f'Posting type "{ metadata["posting_class"] }" not compatible')
+        if metadata['ranker_posting_class'] != 'frequency':
+            raise Exception(f'Posting type "{ metadata["ranker_posting_class"] }" not compatible')
 
         self.metadata = metadata
 
     def metadata(self) -> Dict[str, object]:
         return {
             'ranker': 'TF_IDF',
-            'posting_class': 'frequency'
+            'ranker_posting_class': 'frequency'
         }
 
-    def order(self, term_to_posting_list: Dict[str, PostingList]) -> List[Tuple[int, float]]:
-
-        query = list(term_to_posting_list.keys())
+    def order(self, query:List[str], term_to_posting_list: Dict[str, PostingList]) -> List[Tuple[int, float]]:
 
         tfs = dict()
-        for token in query:
-            tfs[token] = TF_IDF_Ranker.uniform_tf(query.count(token))
-
-        weights = tfs.values()
-        sum_weights = sum([weight*weight for weight in weights])
-        sqrt_weights = math.sqrt(sum_weights)
+        for token in term_to_posting_list.keys():
+            tfs[token] = self.uniform_tf(query.count(token))
 
         scores: DefaultDict[int, float] = defaultdict(float)  # doc_id, score
+
+        # query
+        ltc:Dict[str, float] = dict()
+        for term, tf in tfs.items():
+            posting_list = term_to_posting_list.get(term)
+            if posting_list == None: continue
+
+            idf = posting_list.tiny
+            ltc[term] = tf * idf
+        uniformed_ltc = TF_IDF_Ranker.uniform_weight(ltc)
+
+        # documents
         for term, tf in tfs.items():
             posting_list = term_to_posting_list.get(term)
             if posting_list == None: continue
 
             docs: List[int] = posting_list.get_documents()
 
-            idf = posting_list.tiny
             for doc in docs:
-                # query
-                ltc = (tf / sqrt_weights) * idf
-                # documents
                 lnc = posting_list.tf_weight[doc]
 
-                scores[doc] += ltc * lnc
+                scores[doc] += lnc * uniformed_ltc[term]
         
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
     def merge_calculations(self, posting_list: PostingList):
-        posting_list.idf = self.calculate_idf(posting_list)
+        posting_list.idf = self.calculate_idf(posting_list) 
     
     def tiny_repr(self, posting_list: PostingList):
         return str(posting_list.idf)
@@ -117,7 +121,7 @@ class TF_IDF_Ranker(Ranker):
             posting_list: PostingList = term_to_postinglist[token]
             if not hasattr(posting_list, 'tf_weight'):
                 TF_IDF_Ranker.posting_list_init(posting_list)
-                posting_list.tf_weight[doc_id] = uniformed_tfs[token]
+            posting_list.tf_weight[doc_id] = uniformed_tfs[token]
 
     def calculate_tf(self, doc_id: int, tokens: List[str]):
         """
@@ -131,16 +135,18 @@ class TF_IDF_Ranker(Ranker):
 
         for token in tokens:
             if token not in term_frequencies:
-                term_frequencies[token] = TF_IDF_Ranker.uniform_tf(tokens.count(token))
+                term_frequencies[token] = self.uniform_tf(tokens.count(token))
 
         return term_frequencies
 
-    @staticmethod
-    def uniform_tf(tf):
-        return 1 + math.log10(tf)
+    def uniform_tf(self, tf):
+        if self.schema[0] == 'l':
+            return 1 + math.log(tf) if tf > 0 else 0
+        elif self.schema[0] == 'b':
+            return 1 if tf > 0 else 0
 
     def calculate_idf(self, posting_list: PostingList):
-        return round(math.log10(len(self.documents_length)/len(posting_list.posting_list)), 3)
+        return round(math.log(len(self.documents_length)/len(posting_list.posting_list)), 3)
 
     @staticmethod
     def calculate_weights(tfs):

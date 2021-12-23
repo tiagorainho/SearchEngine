@@ -225,7 +225,7 @@ class Spimi():
             for term, posting_list in min_term_generator:
                 # ranker calculations with the whole posting list
                 self.ranker.merge_calculations(posting_list)
-
+               
                 # write to output file and get index
                 output_file.write(f"{term} {self.ranker.term_repr(posting_list)}\n")
                 # index[term] = None

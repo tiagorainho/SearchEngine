@@ -6,7 +6,8 @@ from argparse import ArgumentParser
 import time
 from typing import List
 from models.index import InvertedIndex
-from models.ranker import RankerFactory
+from models.posting_list import PostingType
+from models.ranker import RankerFactory, RankingMethod
 from models.tokenizer import Tokenizer
 
 def parse_args():
@@ -44,7 +45,7 @@ def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=F
         t2 = time.perf_counter()
         if verbose: print(f"Time to start searcher {(t2-t1)* 100}ms")
 
-        ranker = RankerFactory(index.metadata['ranker'])(index.metadata['posting_class'])
+        ranker = RankerFactory(RankingMethod(index.metadata['ranker']))(PostingType(index.metadata['posting_class']))
 
         tokenizer = Tokenizer(index.metadata['min_token_length'],
                             index.metadata['stop_words'], index.metadata['language'])
@@ -55,6 +56,7 @@ def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=F
 
         #  get the seach result
         matches = [int(doc_id) for doc_id in index.search(tokens, n_results, ranker, show_score=False)]
+        print(index.search(tokens, n_results, ranker, show_score=True))
 
         # convert the auxiliary doc id into real ones
         doc_id_to_real_doc_id = index.fetch_terms(matches, index.metadata['doc_mapping'])
