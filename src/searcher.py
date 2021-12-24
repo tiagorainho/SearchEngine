@@ -38,7 +38,7 @@ def parse_args():
 
 
 def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=False):
-
+    
         t1 = time.perf_counter()
         index = InvertedIndex(None, output_path=index_file)
         t2 = time.perf_counter()

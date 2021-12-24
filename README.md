@@ -249,21 +249,21 @@ Data Structure where the document id links to a list of positions where the term
 
 ### Search
 
-The following table presents the statistics and search results related to the search of the query list provided by the professor and using an index with ``frequency posting lists`` with both ``BM25`` and ``TF-IDF`` rankers.
+The following table presents the statistics and search results related to the search of the query list provided by the professor and using an index with ``frequency posting lists`` with both ``BM25`` and ``TF-IDF`` rankers. (``TF-IDF`` used the ``lnc.ltc`` schema)
 
 The search result files are in inside the ``results``folder.
 
 #### TF-IDF Ranker
 
 | Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time | Files                    |
-| :----------------------- | ---------------- | ------------------------- | ----------- | ------------------------ |
-| Digital_Music_Purchase   | 181.83 sec       | 0.0045 ms                 | 0.130 ms    | tf_idf_digital_music.txt |
-| Music                    | 1490.10 sec       | 0.0044 ms             | 0.745 ms    | tf_idf_music.txt         |
+| :----------------------- | ---------------- | ------------------------- | --------------- | ------------------------ |
+| Digital_Music_Purchase   | 181.83 sec       | 63.09 ms                  | 14.17 ms        | results_tfidf.txt        |
+| Music                    | 1490.10 sec      | 384.32 ms                 | 71.09 ms        | results.tfidf-2.txt      |
 
 #### BM25 Ranker
 
 | Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time | Files                  |
-| :----------------------- | ---------------- | --------------------- | ----------- | ---------------------- |
-| Digital_Music_Purchase   | 115.65 sec       | 0.0045 ms             | 0.130 ms    | bm25_digital_music.txt |
-| Music                    | 787.02 sec       | 0.0044 ms             | 0.745 ms    | bm25_music.txt         |
+| :----------------------- | ---------------- | ------------------------- | --------------- | ---------------------- |
+| Digital_Music_Purchase   | 115.65 sec       | 121.16 ms                 | 12.28 ms        | results_bm25.txt       |
+| Music                    | 787.02 sec       | 723.59 ms                 | 67.93 ms        | results_bm25-2.txt     |
 
