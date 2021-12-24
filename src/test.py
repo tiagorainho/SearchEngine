@@ -10,6 +10,7 @@ from models.posting_list import PostingType
 from models.ranker import RankerFactory, RankingMethod
 from models.tokenizer import Tokenizer
 from indexer import index
+import os
 
 BLOCK_DIR = 'cache/blocks'
 OUTPUT_INDEX = f'cache/index/{time.time()}.index'
@@ -19,6 +20,9 @@ DOC_MAPPING_FILE = 'cache/docs_mapping.txt'
 # TOKENIZER IS NOT ACTIVE FOR THIS TESTS
 
 if __name__ == '__main__':
+    os.makedirs(f"cache", exist_ok=True)
+    for dir in ['blocks', 'index', 'mappings']:
+        os.makedirs(f"cache/{dir}", exist_ok=True)
 
     stop_words = 'stop_words.txt'
     min_token_length = 0
@@ -28,7 +32,7 @@ if __name__ == '__main__':
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.FREQUENCY
-    ranking_method = RankingMethod.TF_IDF
+    ranking_method = RankingMethod.BM25
     tf_idf_schema = 'lnc.ltc'
     n_results = 3
     bm25_k = 1.2

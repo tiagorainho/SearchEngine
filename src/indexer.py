@@ -153,6 +153,7 @@ def parse_args():
 
 if __name__ == '__main__':
     # create the auxiliary directories when they do not exist
+    os.makedirs(f"cache", exist_ok=True)
     for dir in ['blocks', 'index', 'mappings']:
         os.makedirs(f"cache/{dir}", exist_ok=True)
 
