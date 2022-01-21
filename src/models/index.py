@@ -105,8 +105,8 @@ class InvertedIndex:
                 max = end
                 file.seek(min)
                 line = file.readline()
-                term_type = type(term)
-                line_term = term_type(line.split(self.delimiter)[0])
+                line_term, line_posting_list = line.split(self.delimiter, 1)
+                term_type = type(line_term)
 
                 while term != line_term and max - min > 1:
                     middle = int((max + min) / 2)
@@ -152,7 +152,6 @@ class InvertedIndex:
             matches[term] = posting_list
             self.inverted_index[term] = posting_list
             self.inverted_index[term].tiny = self.tiny_dict.get(term, None)
-
         return matches
 
     def clear(self):

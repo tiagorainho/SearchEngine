@@ -27,8 +27,11 @@ if __name__ == '__main__':
     stop_words = 'stop_words.txt'
     min_token_length = 0
     language = None
-    texts = ['this rock album rock is amazing', 'greatest rock album', 'best folk cd']
-    search_terms = "greatest rock album"
+    texts = [
+        'Hello nice to meet you',
+        'It is my fault the rock l album went bust',
+        'greatest album i have ever heard rock']
+    search_terms = "greatest rock ollll album"
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.POSITIONAL
