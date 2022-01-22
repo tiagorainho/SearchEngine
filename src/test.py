@@ -34,8 +34,8 @@ if __name__ == '__main__':
     search_terms = "greatest rock ollll album"
     max_ram = 95
     max_block_size = 2000
-    posting_list_type = PostingType.POSITIONAL
-    ranking_method = RankingMethod.BM25_POSITIONAL
+    posting_list_type = PostingType.FREQUENCY
+    ranking_method = RankingMethod.TF_IDF
     tf_idf_schema = 'lnc.ltc'
     n_results = 3
     bm25_k = 1.2
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         index = indexer.construct_index(OUTPUT_INDEX)
     t2 = time.perf_counter()
 
-    # indexer.clear_blocks()
+    indexer.clear_blocks()
     print(f'whole indexing took: {t2-t1} seconds')
 
     print("\n------------ Searching -------------")

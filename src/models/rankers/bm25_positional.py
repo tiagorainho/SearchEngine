@@ -1,12 +1,18 @@
+# Authors:
+# Tiago Rainho - 92984
+# Vasco Sousa  - 93049
+
 
 from collections import defaultdict
 from typing import DefaultDict, Dict, List
 from models.posting_list import PostingList, PostingListFactory, PostingType
-from models.ranker import Ranker
+from models.ranker import Ranker, RankingMethod
 import math
 
+from models.rankers.bm25 import BM25_Ranker
 
-class BM25_Positional_Ranker(Ranker):
+
+class BM25_Positional_Ranker(BM25_Ranker):
     k: float
     b: float
     a: float
@@ -14,24 +20,15 @@ class BM25_Positional_Ranker(Ranker):
     documents_length: DefaultDict
     posting_class: PostingList.__class__
     allowed_posting_types = [PostingType.POSITIONAL]
+    ranking_method: RankingMethod
 
 
     def __init__(self, posting_type: PostingType, *args, **kwargs):
-        super().__init__(posting_type)
-        self.documents_length = defaultdict(int)
-        self.posting_class = PostingListFactory(posting_type)
-        self.k = kwargs['k'] if 'k' in kwargs else None
-        self.b = kwargs['b'] if 'b' in kwargs else None
-        self.alpha = 0.5
-        self.max_distance = 20
+        super().__init__(posting_type, *args, **kwargs)
+        self.alpha = 0.4
+        self.max_distance = 10
+        self.ranking_method = RankingMethod.BM25_OPTIMIZED
         self.c = math.log10(self.max_distance*1.5)
-
-    @staticmethod
-    def load_tiny(line: str):
-        return float(line)
-    
-    def merge_calculations(self, posting_list: PostingList):
-        posting_list.idf = self.calculate_idf(posting_list)
 
     def compute_distance(self, i:int, positions1:List[int], j:int, positions2:List[int]):
         score:float = 0
@@ -100,17 +97,11 @@ class BM25_Positional_Ranker(Ranker):
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
     def document_repr(self, posting_list: PostingList):
-        return ' '.join([f'{doc_id}-{str(positions).replace(" ", "")}' for doc_id, positions in posting_list.posting_list.items()])
-
-    def term_repr(self, posting_list: PostingList):
-        return f'{self.document_repr(posting_list)}'
-
-    def tiny_repr(self, posting_list: PostingList):
-        return str(posting_list.idf)
+        return str(posting_list)
 
     def metadata(self) -> Dict[str, object]:
         return {
-            'ranker': 'BM25_Positional',
+            'ranker': str(self.ranking_method).split('.')[1],
             'ranker_posting_class': 'positional',
             'k': self.k,
             'b': self.b
@@ -125,27 +116,18 @@ class BM25_Positional_Ranker(Ranker):
     
     def load_metadata(self, metadata: Dict[str, str]):
         # check if is the same ranker, posting list, etc
-        if metadata['ranker'] != 'BM25_Positional':
+        if metadata['ranker'] != str(self.ranking_method).split('.')[1]:
             raise Exception(f'Ranker "{ metadata["ranker"] }" not compatible')
         if self.k == None: self.k = float(metadata['k'])
         if self.b == None: self.b = float(metadata['b'])
         self.metadata = metadata
     
-    def load_posting_list(self, posting_list_class: PostingList.__class__, line: str) -> PostingList:
-        line = line.replace('[', '')
-        line = line.replace(']', '')
+    def load_posting_list(self, line: str) -> PostingList:
 
         posting_list = self.posting_class()
 
         for posting in line.split(' '):
-            doc_id, positions = tuple(posting.split('-'))
+            doc_id, positions = tuple(posting.split(':'))
             posting_list.posting_list[doc_id] = [int(position) for position in positions.split(',')]
 
         return posting_list
-
-    def after_add_tokens(self, term_to_postinglist: Dict[str, PostingList], tokens: List[str], doc_id: int):
-        if doc_id not in self.documents_length:
-            self.documents_length[doc_id] = len(tokens)
-
-    def calculate_idf(self, posting_list: PostingList):
-        return round(math.log(len(self.documents_length)/len(posting_list.posting_list)), 3)

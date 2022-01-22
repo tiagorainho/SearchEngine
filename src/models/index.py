@@ -148,7 +148,7 @@ class InvertedIndex:
         # fetch the terms that are in the index file but not in memory and store them
         fetched_terms = self.fetch_terms(terms, self.file, self.index_start, self.index_end)
         for term, line in fetched_terms.items():
-            posting_list = load_posting_list_func(self.posting_list_class, line)
+            posting_list = load_posting_list_func(line)
             matches[term] = posting_list
             self.inverted_index[term] = posting_list
             self.inverted_index[term].tiny = self.tiny_dict.get(term, None)
@@ -195,7 +195,7 @@ class InvertedIndex:
     
     def load(self, line: str, ranker:Ranker) -> Tuple[str, PostingList]:
         term, posting_list_str = tuple(line.split(self.delimiter, 1))
-        return term, ranker.load_posting_list(self.posting_list_class, posting_list_str)
+        return term, ranker.load_posting_list(posting_list_str)
 
     def __repr__(self):
         repr = ''

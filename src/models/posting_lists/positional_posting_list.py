@@ -49,3 +49,6 @@ class PositionalPostingList(PostingList):
 
     def __repr__(self):
         return ' '.join([f"{str(doc_id)}:{','.join([str(position) for position in postings_list])}" for doc_id, postings_list in self.posting_list.items()])
+
+    def __str__(self):
+        return repr(self)
