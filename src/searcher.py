@@ -4,7 +4,9 @@
 
 from argparse import ArgumentParser
 import time
+from tracemalloc import start
 from typing import List
+from efficiency import Efficiency
 from models.index import InvertedIndex
 from models.posting_list import PostingType
 from models.ranker import RankerFactory, RankingMethod
@@ -38,7 +40,7 @@ def parse_args():
 
 
 def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=False):
-    
+
         t1 = time.perf_counter()
         index = InvertedIndex(None, output_path=index_file)
         t2 = time.perf_counter()
@@ -59,6 +61,8 @@ def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=F
         # convert the auxiliary doc id into real ones
         doc_id_to_real_doc_id = index.fetch_terms(matches, index.metadata['doc_mapping'])
 
+        print(doc_id_to_real_doc_id)
+
         t2 = time.perf_counter()
         if verbose: print(f"Search in {(t2-t1)* 100}ms")
 
@@ -67,12 +71,16 @@ def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=F
 
 if __name__ == '__main__':
     args = parse_args()
+    efficiency = Efficiency()
     if args.query == None:
         while(True):
             query = input("Search (exit interactive search with 'q'): ").split(' ')
             if len(query) == 1 and query[0].lower() == 'q': break
+            start_time = time.perf_counter()
             results = search(args.search_index, query, args.n_results)
-            print(results)
+            efficiency.add_search_time(time.perf_counter()-start_time)
+            efficiency.calculate_stats(query, results)
+            print(efficiency)
     else:
         results = search(args.search_index, args.query, args.n_results)
         print(results)

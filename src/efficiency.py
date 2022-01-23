@@ -53,3 +53,6 @@ class Efficiency:
 
     def add_search_time(self, search_time: float):
         self.search_times.append(search_time)
+
+    def __str__(self):
+        return f'{self.precisions}\n{self.recalls}\n{self.fscores}'

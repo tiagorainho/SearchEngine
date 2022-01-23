@@ -100,7 +100,7 @@ class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
         return str(posting_list.idf)
 
     def document_repr(self, posting_list: PostingList):
-        return ' '.join([f'{doc_id}-{len(positions)}/{round(posting_list.tf_weight[doc_id], 3)}' for doc_id, positions in posting_list.posting_list.items()])
+        return ' '.join([f"{str(doc_id)}:{','.join([str(position) for position in postings_list])}/{round(posting_list.tf_weight[doc_id], 3)}" for doc_id, postings_list in posting_list.posting_list.items()])
 
     def term_repr(self, posting_list: PostingList):
         return f'{self.document_repr(posting_list)}'
@@ -120,6 +120,7 @@ class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
             posting_list.idf = float(idf)
 
         for posting in posting_list_str.split(' '):
+            print(posting)
             posting_str, weight = tuple(posting.split('/'))
             doc_id, freq = tuple(posting_str.split(':'))
             posting_list.posting_list[doc_id] = int(freq)
