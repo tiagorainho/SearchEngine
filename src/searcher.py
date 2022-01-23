@@ -4,7 +4,6 @@
 
 from argparse import ArgumentParser
 import time
-from tracemalloc import start
 from typing import List
 from efficiency import Efficiency
 from models.index import InvertedIndex
@@ -61,8 +60,6 @@ def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=F
         # convert the auxiliary doc id into real ones
         doc_id_to_real_doc_id = index.fetch_terms(matches, index.metadata['doc_mapping'])
 
-        print(doc_id_to_real_doc_id)
-
         t2 = time.perf_counter()
         if verbose: print(f"Search in {(t2-t1)* 100}ms")
 
@@ -79,8 +76,9 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             results = search(args.search_index, query, args.n_results)
             efficiency.add_search_time(time.perf_counter()-start_time)
-            efficiency.calculate_stats(query, results)
-            print(efficiency)
+            #efficiency.calculate_stats(query, results)
+            print(results)
+            #print(efficiency)
     else:
         results = search(args.search_index, args.query, args.n_results)
         print(results)

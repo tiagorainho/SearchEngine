@@ -23,6 +23,7 @@ DOC_MAPPING_FILE = 'cache/docs_mapping.txt'
 if __name__ == '__main__':
 
     efficiency = Efficiency()
+    show_efficiency = False
 
     os.makedirs(f"cache", exist_ok=True)
     for dir in ['blocks', 'index', 'mappings']:
@@ -39,7 +40,7 @@ if __name__ == '__main__':
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.POSITIONAL
-    ranking_method = RankingMethod.BM25_OPTIMIZED
+    ranking_method = RankingMethod.TF_IDF_OPTIMIZED
     tf_idf_schema = 'lnc.ltc'
     n_results = 3
     bm25_k = 1.2
@@ -91,10 +92,14 @@ if __name__ == '__main__':
     tokens = search_terms.split(' ') # tokenizer.tokenize(search_terms)
 
     #  get the seach result
+    t1 = time.perf_counter()
     result = index.search(tokens, n_results, ranker, show_score=True)
+    t = time.perf_counter()
 
-    efficiency.calculate_stats('greatest rock album', result)
-
+    if show_efficiency:
+        efficiency.add_search_time(t2-t1)
+        efficiency.calculate_stats('greatest rock album', result)
+        print(efficiency)
 
 
     print(result)
