@@ -6,12 +6,12 @@
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Set, Tuple
 from models.posting_list import PostingList, PostingListFactory, PostingType
-from models.ranker import Ranker
 import math
+from models.rankers.tf_idf import TF_IDF_Ranker
 
-class TF_IDF_Ranker(Ranker):
+class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
     documents_length: DefaultDict
-    allowed_posting_types = [PostingType.FREQUENCY]
+    allowed_posting_types = [PostingType.POSITIONAL]
     posting_class: PostingList.__class__
     schema: str
     allowed_schemas: Set[str] = [
@@ -19,9 +19,6 @@ class TF_IDF_Ranker(Ranker):
         'ntp',
         'nc'
     ]
-    allowed_posting_types: Set[PostingType] = {
-        PostingType.FREQUENCY
-    }
 
     """
     added attributes to PostingList:
@@ -29,18 +26,7 @@ class TF_IDF_Ranker(Ranker):
     """
 
     def __init__(self, posting_type: PostingType, *args, **kwargs):
-        super().__init__(posting_type)
-        # if posting_type not in self.allowed_posting_types:
-        #     raise Exception(
-        #         f'{ posting_type } not supported for {self.__class__}')
-        self.documents_length = defaultdict(int)
-        self.posting_class = PostingListFactory(posting_type)
-        if 'schema' in kwargs:
-            self.schema = kwargs['schema']
-            TF_IDF_Ranker.validate_schema(kwargs['schema'])
-        else:
-            self.schema = 'lnc.ltc'
-
+        super().__init__(posting_type, *args, **kwargs)
 
     
     @staticmethod
@@ -76,7 +62,7 @@ class TF_IDF_Ranker(Ranker):
         }
 
     def order(self, query:List[str], term_to_posting_list: Dict[str, PostingList]) -> List[Tuple[int, float]]:
-
+        exit(0)
         tfs = dict()
         for token in term_to_posting_list.keys():
             tfs[token] = self.uniform_tf(query.count(token), self.schema[4])
@@ -114,7 +100,7 @@ class TF_IDF_Ranker(Ranker):
         return str(posting_list.idf)
 
     def document_repr(self, posting_list: PostingList):
-        return ' '.join([f'{doc_id}:{freq}/{round(posting_list.tf_weight[doc_id], 3)}' for doc_id, freq in posting_list.posting_list.items()])
+        return ' '.join([f'{doc_id}-{len(positions)}/{round(posting_list.tf_weight[doc_id], 3)}' for doc_id, positions in posting_list.posting_list.items()])
 
     def term_repr(self, posting_list: PostingList):
         return f'{self.document_repr(posting_list)}'

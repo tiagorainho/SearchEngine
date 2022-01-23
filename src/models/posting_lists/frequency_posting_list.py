@@ -41,7 +41,7 @@ class FrequencyPostingList(PostingList):
     def load(line:str)->PostingList:
         new_posting_list = FrequencyPostingList()
         for posting in line.split(' '):
-            docid_freq = posting.split('-')
+            docid_freq = posting.split(':')
             new_posting_list.posting_list[docid_freq[0]] = docid_freq[1]
         return new_posting_list
  

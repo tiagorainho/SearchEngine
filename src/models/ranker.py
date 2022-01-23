@@ -8,10 +8,11 @@ from enum import Enum
 from typing import Dict, List, Tuple
 from models.posting_list import PostingList, PostingType
 
-
 class RankingMethod(Enum):
     TF_IDF = 'TF_IDF'
+    TF_IDF_OPTIMIZED = 'TF_IDF_OPTIMIZED'
     BM25 = 'BM25'
+    BM25_OPTIMIZED = 'BM25_OPTIMIZED'
 
 
 class Ranker:
@@ -66,10 +67,15 @@ class Ranker:
 
 from models.rankers.bm25 import BM25_Ranker
 from models.rankers.tf_idf import TF_IDF_Ranker
+from models.rankers.bm25_positional import BM25_Positional_Ranker
+from models.rankers.td_idf_positional import TF_IDF_Positional_Ranker
+
 
 ranking_methods:Dict[RankingMethod, Ranker] = {
     RankingMethod.TF_IDF: TF_IDF_Ranker,
-    RankingMethod.BM25: BM25_Ranker
+    RankingMethod.BM25: BM25_Ranker,
+    RankingMethod.BM25_OPTIMIZED: BM25_Positional_Ranker,
+    RankingMethod.TF_IDF_OPTIMIZED: TF_IDF_Positional_Ranker,
 }
 
 

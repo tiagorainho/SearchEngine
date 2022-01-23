@@ -10,6 +10,7 @@ from models.ranker import Ranker
 import math
 
 
+
 class BM25_Ranker(Ranker):
     k: float
     b: float
@@ -18,7 +19,6 @@ class BM25_Ranker(Ranker):
     posting_class: PostingList.__class__
 
     def __init__(self, posting_type: PostingType, *args, **kwargs):
-        super().__init__(posting_type)
         self.documents_length = defaultdict(int)
         self.posting_class = PostingListFactory(posting_type)
         self.k = kwargs['k'] if 'k' in kwargs else None
@@ -57,7 +57,7 @@ class BM25_Ranker(Ranker):
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
     def document_repr(self, posting_list: PostingList):
-        return ' '.join([f'{doc_id}-{freq}' for doc_id, freq in posting_list.posting_list.items()])
+        return str(posting_list)
 
     def term_repr(self, posting_list: PostingList):
         return f'{self.document_repr(posting_list)}'
@@ -88,12 +88,12 @@ class BM25_Ranker(Ranker):
         if self.b == None: self.b = float(metadata['b'])
         self.metadata = metadata
 
-    def load_posting_list(self, posting_list_class: PostingList.__class__, line: str) -> PostingList:
+    def load_posting_list(self, line: str) -> PostingList:
 
         posting_list = self.posting_class()
 
         for posting in line.split(' '):
-            doc_id, freq = tuple(posting.split('-'))
+            doc_id, freq = tuple(posting.split(':'))
             posting_list.posting_list[doc_id] = int(freq)
 
         return posting_list
