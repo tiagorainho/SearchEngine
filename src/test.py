@@ -101,5 +101,4 @@ if __name__ == '__main__':
         efficiency.calculate_stats('greatest rock album', result)
         print(efficiency)
 
-
     print(result)
