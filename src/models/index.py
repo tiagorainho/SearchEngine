@@ -105,8 +105,8 @@ class InvertedIndex:
                 max = end
                 file.seek(min)
                 line = file.readline()
+                term_type = type(term)
                 line_term, line_posting_list = line.split(self.delimiter, 1)
-                term_type = type(line_term)
 
                 while term != line_term and max - min > 1:
                     middle = int((max + min) / 2)
@@ -119,7 +119,7 @@ class InvertedIndex:
                         line_term = term_type(line_term)
                     except Exception:
                         continue
-                    
+
                     if term < line_term:
                         max = middle
                     elif term > line_term:

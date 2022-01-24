@@ -3,6 +3,7 @@
 # Vasco Sousa  - 93049
 
 from string import ascii_letters
+from efficiency import Efficiency
 from models.spimi import Spimi
 from models.index import InvertedIndex
 import time
@@ -20,6 +21,10 @@ DOC_MAPPING_FILE = 'cache/docs_mapping.txt'
 # TOKENIZER IS NOT ACTIVE FOR THIS TESTS
 
 if __name__ == '__main__':
+
+    efficiency = Efficiency()
+    show_efficiency = False
+
     os.makedirs(f"cache", exist_ok=True)
     for dir in ['blocks', 'index', 'mappings']:
         os.makedirs(f"cache/{dir}", exist_ok=True)
@@ -29,13 +34,13 @@ if __name__ == '__main__':
     language = None
     texts = [
         'Hello nice to meet you',
-        'It is my fault the rock l album went bust',
+        'It is my fault album the rock l album went bust',
         'greatest album i have ever heard rock']
     search_terms = "greatest rock ollll album"
     max_ram = 95
     max_block_size = 2000
-    posting_list_type = PostingType.FREQUENCY
-    ranking_method = RankingMethod.TF_IDF
+    posting_list_type = PostingType.POSITIONAL
+    ranking_method = RankingMethod.TF_IDF_OPTIMIZED
     tf_idf_schema = 'lnc.ltc'
     n_results = 3
     bm25_k = 1.2
@@ -87,6 +92,14 @@ if __name__ == '__main__':
     tokens = search_terms.split(' ') # tokenizer.tokenize(search_terms)
 
     #  get the seach result
+    t1 = time.perf_counter()
     result = index.search(tokens, n_results, ranker, show_score=True)
+    t = time.perf_counter()
+
+    if show_efficiency:
+        efficiency.add_search_time(t2-t1)
+        efficiency.calculate_stats('greatest rock album', result)
+        print(efficiency)
+
 
     print(result)

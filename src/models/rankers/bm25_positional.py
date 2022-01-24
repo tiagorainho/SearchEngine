@@ -15,8 +15,9 @@ from models.rankers.bm25 import BM25_Ranker
 class BM25_Positional_Ranker(BM25_Ranker):
     k: float
     b: float
-    a: float
+    alpha: float
     max_distance: int
+    c: float
     documents_length: DefaultDict
     posting_class: PostingList.__class__
     allowed_posting_types = [PostingType.POSITIONAL]
@@ -25,9 +26,9 @@ class BM25_Positional_Ranker(BM25_Ranker):
 
     def __init__(self, posting_type: PostingType, *args, **kwargs):
         super().__init__(posting_type, *args, **kwargs)
-        self.alpha = 0.4
-        self.max_distance = 10
         self.ranking_method = RankingMethod.BM25_OPTIMIZED
+        self.alpha = 0.5
+        self.max_distance = 10
         self.c = math.log10(self.max_distance*1.5)
 
     def compute_distance(self, i:int, positions1:List[int], j:int, positions2:List[int]):
@@ -68,8 +69,9 @@ class BM25_Positional_Ranker(BM25_Ranker):
                 term2_positions = term_to_positions[term2]
                 if term1 == term2: continue
                 score += self.compute_distance(i, term1_positions, j+i+1, term2_positions)
-        print(f"score doc {doc_id}: {score}")
-        return math.log10(score)
+        if score > 0:
+            print(f"score doc {doc_id}: {score}")
+        return math.log10(score) if score > 0 else 0
     
     def order(self, query:List[str], term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
         tfs = dict()

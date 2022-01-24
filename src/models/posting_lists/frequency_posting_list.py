@@ -46,7 +46,7 @@ class FrequencyPostingList(PostingList):
         return new_posting_list
  
     def __repr__(self):
-        return ' '.join([f'{doc_id}-{freq}' for doc_id, freq in self.posting_list.items()])
+        return ' '.join([f'{doc_id}:{freq}' for doc_id, freq in self.posting_list.items()])
     
     def repr(self):
         return self.__repr__()
