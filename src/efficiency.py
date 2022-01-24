@@ -18,13 +18,14 @@ class Efficiency:
         self.fscores = dict()
         self.search_times = []
         self.reference_results = dict()
+        self.ndcg = dict()
 
         current_query = ''
         with open("queries.relevance.txt") as file:
             for line in file:
                 if "Q:" in line:
                     current_query = line.split(":")[1].strip()
-                    self.reference_results[current_query] = dict()
+                    self.reference_results[current_query] = list()
                 elif line.strip() == "":
                     continue
                 else:
@@ -33,15 +34,18 @@ class Efficiency:
                         (doc_id, score))
 
     def calculate_stats(self, query: str, results: List[Tuple[str, float]]):
-        reference = self.reference_results[query]
+        reference = self.reference_results[query][:len(results)]
         relevant_docs_n = 0
+        print(reference)
+        print()
+        print(results)
 
-        for result in results:
-            if result in list(map(lambda r: r[0], reference)):
+        for doc_id, score in results:
+            if doc_id in list(map(lambda r: r[0], reference)):
                 relevant_docs_n += 1
 
-        recall = relevant_docs_n / len(reference)
-        precision = relevant_docs_n / len(result)
+        recall = relevant_docs_n / (relevant_docs_n + (len(reference) - relevant_docs_n))
+        precision = relevant_docs_n / len(results)
         f_score = 2 * (precision * recall) / (precision + recall)
 
         self.precisions[query] = precision
@@ -50,17 +54,17 @@ class Efficiency:
         dcg = 0
         idcg = 0
 
-        for i, (_, score) in results:
+        for i, (_, score) in enumerate(results):
             numerator = 2**score - 1
             denominator = math.log2(i + 2)
             dcg += numerator/denominator
 
-        for i, (_, score) in self.reference_results[query]:
-            numerator = 2**score - 1
+        for i, (_, score) in enumerate(self.reference_results[query]):
+            numerator = 2**float(score) - 1
             denominator = math.log2(i + 2)
             idcg += numerator/denominator
 
-        self.ndcg = dcg / idcg
+        self.ndcg[query] = dcg / idcg
 
     def calculate_average_precision(self):
         return mean(self.precisions.values())
@@ -72,4 +76,4 @@ class Efficiency:
         self.search_times.append(search_time)
 
     def __str__(self):
-        return f'{self.precisions}\n{self.recalls}\n{self.fscores}'
+        return f'precision: {self.precisions}\nrecall: {self.recalls}\nfscore: {self.fscores}'

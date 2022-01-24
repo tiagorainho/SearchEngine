@@ -6,7 +6,7 @@
 from collections import defaultdict
 from typing import DefaultDict, Dict, List
 from models.posting_list import PostingList, PostingListFactory, PostingType
-from models.ranker import Ranker, RankingMethod
+from models.ranker import RankingMethod
 import math
 
 from models.rankers.bm25 import BM25_Ranker
@@ -27,7 +27,7 @@ class BM25_Positional_Ranker(BM25_Ranker):
     def __init__(self, posting_type: PostingType, *args, **kwargs):
         super().__init__(posting_type, *args, **kwargs)
         self.ranking_method = RankingMethod.BM25_OPTIMIZED
-        self.alpha = 0.5
+        self.alpha = 0.01
         self.max_distance = 10
         self.c = math.log10(self.max_distance*1.5)
 
@@ -68,9 +68,7 @@ class BM25_Positional_Ranker(BM25_Ranker):
             for j, term2 in enumerate(query[i:], start=1):
                 term2_positions = term_to_positions[term2]
                 if term1 == term2: continue
-                score += self.compute_distance(i, term1_positions, j+i+1, term2_positions)
-        if score > 0:
-            print(f"score doc {doc_id}: {score}")
+                score += self.compute_distance(i, term1_positions, j+i+1, term2_positions) 
         return math.log10(score) if score > 0 else 0
     
     def order(self, query:List[str], term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
@@ -80,6 +78,8 @@ class BM25_Positional_Ranker(BM25_Ranker):
 
         scores: DefaultDict[int, float] = defaultdict(float)  # doc_id, score
         dl_div_avgdl = self.metadata["doc_length_normalization"]
+        min_dl_div_avgdl = min(self.metadata["doc_length_normalization"].values())
+        max_dl_div_avgdl = max(self.metadata["doc_length_normalization"].values())
 
         # calculate BM25 score
         for term, tf in tfs.items():
@@ -91,12 +91,18 @@ class BM25_Positional_Ranker(BM25_Ranker):
                     idf = posting_list.tiny
                     tf = (freq * (self.k + 1)) / (freq + self.k * (1 - self.b + self.b * dl_div_avgdl[doc]))
                     scores[doc] += idf * tf
-        
+
         # calculate positional boost
         for doc, score in scores.items():
-            scores[doc] = (1 - self.alpha) * score + self.alpha * self.calculate_boost(query, doc, term_to_posting_list)
 
-        return sorted(scores.items(), key=lambda i: i[1], reverse=True)
+            score = self.calculate_boost(query, doc, term_to_posting_list)
+
+            # normalize scores
+            doc_length_normalization = math.log2((dl_div_avgdl[doc]-min_dl_div_avgdl)/(max_dl_div_avgdl-min_dl_div_avgdl)+1)
+
+            scores[doc] = (1 - self.alpha) * score + self.alpha * score / doc_length_normalization
+
+        return sorted(scores.items(), key=lambda i: i[1], reverse=True) 
 
     def document_repr(self, posting_list: PostingList):
         return str(posting_list)

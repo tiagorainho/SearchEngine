@@ -36,11 +36,11 @@ if __name__ == '__main__':
         'Hello nice to meet you',
         'It is my fault album the rock l album went bust',
         'greatest album i have ever heard rock']
-    search_terms = "greatest rock ollll album"
+    search_terms = "greatest rock album"
     max_ram = 95
     max_block_size = 2000
     posting_list_type = PostingType.POSITIONAL
-    ranking_method = RankingMethod.TF_IDF_OPTIMIZED
+    ranking_method = RankingMethod.BM25_OPTIMIZED
     tf_idf_schema = 'lnc.ltc'
     n_results = 3
     bm25_k = 1.2
@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
     if show_efficiency:
         efficiency.add_search_time(t2-t1)
-        efficiency.calculate_stats('greatest rock album', result)
+        efficiency.calculate_stats(search_terms, result)
         print(efficiency)
 
     print(result)

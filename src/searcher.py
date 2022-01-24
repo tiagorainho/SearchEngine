@@ -38,7 +38,7 @@ def parse_args():
     return arg_parser.parse_args()
 
 
-def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=False, show_score=True):
+def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=False):
 
         t1 = time.perf_counter()
         index = InvertedIndex(None, output_path=index_file)
@@ -55,20 +55,18 @@ def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=F
         t1 = time.perf_counter()
 
         #  get the seach result
-        results = index.search(tokens, n_results, ranker, show_score=show_score)
+        results = index.search(tokens, n_results, ranker, show_score=True)
         matches = []
-        if show_score:
-            matches = [int(doc_id) for doc_id, score in results]
-        else:
-            matches = [int(doc_id) for doc_id in results]
+        doc_id_to_real_doc_id = []
+        matches = [(int(doc_id), float(score)) for doc_id, score in results]
 
         # convert the auxiliary doc id into real ones
-        doc_id_to_real_doc_id = index.fetch_terms(matches, index.metadata['doc_mapping'])
+        doc_id_to_real_doc_id = index.fetch_terms([doc_id for doc_id, _ in matches], index.metadata['doc_mapping'])
 
         t2 = time.perf_counter()
         if verbose: print(f"Search in {(t2-t1)* 100}ms")
 
-        return [doc_id_to_real_doc_id[match] for match in matches]
+        return [(doc_id_to_real_doc_id[match], score) for match, score in matches]
 
 
 if __name__ == '__main__':
@@ -79,11 +77,14 @@ if __name__ == '__main__':
             query = input("Search (exit interactive search with 'q'): ").split(' ')
             if len(query) == 1 and query[0].lower() == 'q': break
             start_time = time.perf_counter()
-            results = search(args.search_index, query, args.n_results, show_score=True)
+            results = search(args.search_index, query, args.n_results)
             efficiency.add_search_time(time.perf_counter()-start_time)
-            #efficiency.calculate_stats(query, results)
-            print(results)
-            #print(efficiency)
+            efficiency.calculate_stats(' '.join(query), results)
+            print(efficiency)
     else:
-        results = search(args.search_index, args.query, args.n_results, show_score=True)
-        print(results)
+        start_time = time.perf_counter()
+        results = search(args.search_index, args.query, args.n_results)
+        efficiency.add_search_time(time.perf_counter()-start_time)
+        efficiency.calculate_stats(' '.join(args.query), results)
+        print(efficiency)
+

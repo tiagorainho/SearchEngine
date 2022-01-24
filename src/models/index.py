@@ -119,7 +119,7 @@ class InvertedIndex:
                         line_term = term_type(line_term)
                     except Exception:
                         continue
-
+                    
                     if term < line_term:
                         max = middle
                     elif term > line_term:
