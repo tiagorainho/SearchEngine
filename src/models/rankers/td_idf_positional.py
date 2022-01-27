@@ -14,7 +14,7 @@ class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
     allowed_posting_types = [PostingType.POSITIONAL]
     posting_class: PostingList.__class__
     schema: str
-    alpha: float
+    boost_weight: float
     max_distance: int
     c: float
     allowed_schemas: Set[str] = [
@@ -30,7 +30,7 @@ class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
 
     def __init__(self, posting_type: PostingType, *args, **kwargs):
         super().__init__(posting_type, *args, **kwargs)
-        self.alpha = 0.5
+        self.boost_weight = 0.1
         self.max_distance = 10
         self.c = math.log10(self.max_distance*1.5)
 
@@ -84,6 +84,7 @@ class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
                 if aux_score > max_score: max_score = aux_score
             score += max_score
         return score
+
     
     def calculate_boost(self, query:List[str], doc_id:int, term_to_posting_list:Dict[str, PostingList]):
         # get positions for each term
@@ -96,7 +97,7 @@ class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
                 positions = posting_list.posting_list.get(doc_id, [])
                 term_to_positions[term] = positions
 
-        # calculate score
+        # calculate boost
         score = 0
         for i, term1 in enumerate(query, start=1):
             term1_positions = term_to_positions[term1]
@@ -104,12 +105,11 @@ class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
                 term2_positions = term_to_positions[term2]
                 if term1 == term2: continue
                 score += self.compute_distance(i, term1_positions, j+i+1, term2_positions)
-        if score > 0:
-            print(f"score doc {doc_id}: {score}")
         return math.log10(score) if score > 0 else 0
 
     def order(self, query:List[str], term_to_posting_list: Dict[str, PostingList]) -> List[Tuple[int, float]]:
         tfs = dict()
+
         for token in term_to_posting_list.keys():
             tfs[token] = self.uniform_tf(query.count(token), self.schema[4])
 
@@ -138,8 +138,9 @@ class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
                 scores[doc] += lnc * uniformed_ltc[term]
         
         # calculate positional boost
-        for doc, score in scores.items():
-            scores[doc] = (1 - self.alpha) * score + self.alpha * self.calculate_boost(query, doc, term_to_posting_list)
+        for doc, bm25_score in scores.items():
+            boost_score = self.calculate_boost(query, doc, term_to_posting_list)
+            scores[doc] = bm25_score + (self.boost_weight) * boost_score
         
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
