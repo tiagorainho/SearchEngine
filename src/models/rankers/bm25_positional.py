@@ -5,17 +5,16 @@
 
 from collections import defaultdict
 from typing import DefaultDict, Dict, List
-from models.posting_list import PostingList, PostingListFactory, PostingType
+from models.posting_list import PostingList, PostingType
 from models.ranker import RankingMethod
 import math
-
 from models.rankers.bm25 import BM25_Ranker
 
 
 class BM25_Positional_Ranker(BM25_Ranker):
     k: float
     b: float
-    alpha: float
+    boost_weight: float
     max_distance: int
     c: float
     documents_length: DefaultDict
@@ -27,7 +26,7 @@ class BM25_Positional_Ranker(BM25_Ranker):
     def __init__(self, posting_type: PostingType, *args, **kwargs):
         super().__init__(posting_type, *args, **kwargs)
         self.ranking_method = RankingMethod.BM25_OPTIMIZED
-        self.alpha = 0.02
+        self.boost_weight = 0.01
         self.max_distance = 10
         self.c = math.log10(self.max_distance*1.5)
 
@@ -61,14 +60,14 @@ class BM25_Positional_Ranker(BM25_Ranker):
                 positions = posting_list.posting_list.get(doc_id, [])
                 term_to_positions[term] = positions
 
-        # calculate score
+        # calculate boost
         score = 0
         for i, term1 in enumerate(query, start=1):
             term1_positions = term_to_positions[term1]
             for j, term2 in enumerate(query[i:], start=1):
                 term2_positions = term_to_positions[term2]
                 if term1 == term2: continue
-                score += self.compute_distance(i, term1_positions, j+i+1, term2_positions) 
+                score += self.compute_distance(i, term1_positions, j+i+1, term2_positions)
         return math.log10(score) if score > 0 else 0
     
     def order(self, query:List[str], term_to_posting_list: Dict[str, PostingList]) -> Dict[int, float]:
@@ -93,14 +92,17 @@ class BM25_Positional_Ranker(BM25_Ranker):
                     scores[doc] += idf * tf
 
         # calculate positional boost
-        for doc, score in scores.items():
-            score = self.calculate_boost(query, doc, term_to_posting_list)
+        for doc, bm25_score in scores.items():
+            boost_score = self.calculate_boost(query, doc, term_to_posting_list)
 
             # normalize scores
             doc_length_normalization = math.log2((dl_div_avgdl[doc]-min_dl_div_avgdl)/(max_dl_div_avgdl-min_dl_div_avgdl)+1)
             # doc_length_normalization = math.log2(dl_div_avgdl[doc])
 
-            scores[doc] = (1 - self.alpha) * score + self.alpha * score / doc_length_normalization
+            # if boost_score > 0:
+            #     print(doc, "bm25", bm25_score, "boost", (self.boost_weight)*boost_score/doc_length_normalization)
+
+            scores[doc] = bm25_score + (self.boost_weight) * boost_score / doc_length_normalization
 
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
