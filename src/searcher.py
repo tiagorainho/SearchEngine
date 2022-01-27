@@ -8,7 +8,7 @@ from typing import List
 from efficiency import Efficiency
 from models.index import InvertedIndex
 from models.posting_list import PostingType
-from models.ranker import RankerFactory, RankingMethod
+from models.ranker import Ranker, RankerFactory, RankingMethod
 from models.tokenizer import Tokenizer
 
 def parse_args():
@@ -38,18 +38,7 @@ def parse_args():
     return arg_parser.parse_args()
 
 
-def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=False):
-
-        t1 = time.perf_counter()
-        index = InvertedIndex(None, output_path=index_file)
-        t2 = time.perf_counter()
-        if verbose: print(f"Time to start searcher {(t2-t1)* 100}ms")
-
-        ranker = RankerFactory(RankingMethod(index.metadata['ranker']))(PostingType(index.metadata['posting_class']))
-
-        tokenizer = Tokenizer(index.metadata['min_token_length'],
-                            index.metadata['stop_words'], index.metadata['language'])
-
+def search(index:InvertedIndex, ranker:Ranker, tokenizer:Tokenizer, search_terms:List[str], n_results:int, verbose:bool=False):
         tokens = tokenizer.tokenize(" ".join(search_terms))
 
         t1 = time.perf_counter()
@@ -71,20 +60,33 @@ def search(index_file:str, search_terms:List[str], n_results:int, verbose:bool=F
 
 if __name__ == '__main__':
     args = parse_args()
-    efficiency = Efficiency()
+    verbose = False 
+
+    t1 = time.perf_counter()
+    index = InvertedIndex(None, output_path=args.search_index)
+    ranker = RankerFactory(RankingMethod(index.metadata['ranker']))(PostingType(index.metadata['posting_class']))
+    tokenizer = Tokenizer(index.metadata['min_token_length'], index.metadata['stop_words'], index.metadata['language'])
+    t2 = time.perf_counter()
+    if verbose: print(f"Time to start searcher {(t2-t1)* 100}ms")
+
+    
     if args.query == None:
         while(True):
             query = input("Search (exit interactive search with 'q'): ").split(' ')
             if len(query) == 1 and query[0].lower() == 'q': break
+            
+            efficiency = Efficiency()
             start_time = time.perf_counter()
-            results = search(args.search_index, query, args.n_results)
+            results = search(index, ranker, tokenizer, query, args.n_results)
             efficiency.add_search_time(time.perf_counter()-start_time)
             efficiency.calculate_stats(' '.join(query), results)
+            print(results)
             print(efficiency)
     else:
+        efficiency = Efficiency()
         start_time = time.perf_counter()
-        results = search(args.search_index, args.query, args.n_results)
+        results = search(index, ranker, tokenizer, args.query, args.n_results, verbose)
         efficiency.add_search_time(time.perf_counter()-start_time)
         efficiency.calculate_stats(' '.join(args.query), results)
+        print(results)
         print(efficiency)
-

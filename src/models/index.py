@@ -83,6 +83,7 @@ class InvertedIndex:
         ranker.load_metadata(self.metadata)
         term_to_posting_lists = self.light_search(terms, ranker.load_posting_list)
         results = ranker.order(terms, term_to_posting_lists)
+
         if len(results) > n: results = results[:n]
         
         if not show_score:
@@ -130,6 +131,9 @@ class InvertedIndex:
         return matches
 
     def light_search(self, terms: List[str], load_posting_list_func:FunctionType) -> Dict[str, PostingList]:
+        # deepcopy
+        terms = [str(term) for term in terms]
+
         matches = {term:None for term in terms}
         for term in terms:
             if term in self.inverted_index:

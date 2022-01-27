@@ -27,7 +27,7 @@ class BM25_Positional_Ranker(BM25_Ranker):
     def __init__(self, posting_type: PostingType, *args, **kwargs):
         super().__init__(posting_type, *args, **kwargs)
         self.ranking_method = RankingMethod.BM25_OPTIMIZED
-        self.alpha = 0.01
+        self.alpha = 0.02
         self.max_distance = 10
         self.c = math.log10(self.max_distance*1.5)
 
@@ -94,16 +94,15 @@ class BM25_Positional_Ranker(BM25_Ranker):
 
         # calculate positional boost
         for doc, score in scores.items():
-
             score = self.calculate_boost(query, doc, term_to_posting_list)
 
             # normalize scores
             doc_length_normalization = math.log2((dl_div_avgdl[doc]-min_dl_div_avgdl)/(max_dl_div_avgdl-min_dl_div_avgdl)+1)
-            #doc_length_normalization = math.log2(dl_div_avgdl[doc])
+            # doc_length_normalization = math.log2(dl_div_avgdl[doc])
 
             scores[doc] = (1 - self.alpha) * score + self.alpha * score / doc_length_normalization
 
-        return sorted(scores.items(), key=lambda i: i[1], reverse=True) 
+        return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
     def document_repr(self, posting_list: PostingList):
         return str(posting_list)
