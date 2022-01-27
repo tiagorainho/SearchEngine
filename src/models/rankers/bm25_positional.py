@@ -99,6 +99,7 @@ class BM25_Positional_Ranker(BM25_Ranker):
 
             # normalize scores
             doc_length_normalization = math.log2((dl_div_avgdl[doc]-min_dl_div_avgdl)/(max_dl_div_avgdl-min_dl_div_avgdl)+1)
+            #doc_length_normalization = math.log2(dl_div_avgdl[doc])
 
             scores[doc] = (1 - self.alpha) * score + self.alpha * score / doc_length_normalization
 

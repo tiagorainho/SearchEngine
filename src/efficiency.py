@@ -44,7 +44,7 @@ class Efficiency:
             if doc_id in list(map(lambda r: r[0], reference)):
                 relevant_docs_n += 1
 
-        recall = relevant_docs_n / (relevant_docs_n + (len(reference) - relevant_docs_n))
+        recall = relevant_docs_n / (len(reference) - relevant_docs_n)
         precision = relevant_docs_n / len(results)
         f_score = 2 * (precision * recall) / (precision + recall)
 
