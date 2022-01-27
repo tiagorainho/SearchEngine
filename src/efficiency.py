@@ -39,7 +39,6 @@ class Efficiency:
         return self.counter / sum(self.search_times)
 
     def calculate_stats(self, query: str, results: List[Tuple[str, float]]):
-
         self.counter += len(results)
 
         reference = self.reference_results.get(query)

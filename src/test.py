@@ -23,7 +23,7 @@ DOC_MAPPING_FILE = 'cache/docs_mapping.txt'
 if __name__ == '__main__':
 
     efficiency = Efficiency()
-    show_efficiency = False
+    show_efficiency = True
 
     os.makedirs(f"cache", exist_ok=True)
     for dir in ['blocks', 'index', 'mappings']:
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     #  get the seach result
     t1 = time.perf_counter()
     result = index.search(tokens, n_results, ranker, show_score=True)
-    t = time.perf_counter()
+    t2 = time.perf_counter()
 
     if show_efficiency:
         efficiency.add_search_time(t2-t1)
