@@ -70,7 +70,9 @@ The following classes, their hierarchical structure and relevant features are th
         - [Positional Posting List](#positional-posting-list)
 - [Ranker](#ranker)
     - [TF-IDF](#tf-idf-ranker)
+    - [TF-IDF-OPTIMIZED](#tf-idf-optimized-ranker)
     - [BM25](#bm25-ranker)
+    - [BM25-OPTIMIZED](#bm25-optimized-ranker)
 
 
 ### Parser
@@ -144,9 +146,9 @@ After only this simple steps, we have a functional index with a completly differ
 
 A ``light_search()`` method was also implemented in the ``InvertedIndex`` to add searchable capabilities, it is an algorithm that if the searched term is not already inside the Inverted Index, then an access to the main index file is performed, the search in this file is done by RAF (Random Access File) in order to do a binary search since the terms are already sorted, this results in $ O(log_{2}{n}) $ complexity. In order to make the RAF work, the ``seek()`` method was used to point to a particular byte, then as we can not be assured that we are not reading already in the middle of the line, we read the next line to get a clean line that will be read after. This is fine because the first line would be tested at the beginning of the algorithm to ensure it is not the searched term.
 
-The previous method cared of proper ranking because would only provide us with the documents in which a term was found. This is not that useful because we would either get a lot of documents or probably none (feast of famine). For that reason, ``rankers`` are used to provide methods that improve the efficiency of returned documents.
+The previous method cared of proper ranking because would only provide us with the documents in which a term was found. This is not that useful because we would either get a lot of documents or probably none (feast of famine). For that reason, ``rankers`` are used to provide methods that improve the efficiency of returned documents. The method used in each ranker to do this job is the ``order()`` method which ranks the documents based on the implemented function.
 
-The default available rankers are ``TF-IDF`` and ``BM25`` and more can be created similary to the ``Posting Lists``. Extend the ``Ranker`` class found in ``src/models/ranker.py`` file and override the needed methods:
+The default available rankers are ``TF-IDF``, ``TF-IDF-OPTIMIZED``, ``BM25`` and ``BM25-OPTIMIZED``. More can be created similary to the ``Posting Lists``. Extend the ``Ranker`` class found in ``src/models/ranker.py`` file and override the needed methods:
 ```python
     def __init__(self, posting_type: PostingType, *args, **kwargs):
 
@@ -190,6 +192,20 @@ indexer = Spimi(posting_type=PostingType.Frequency, ranker=ranker)
 ```
 
 An example for versatility was implemented in the ``TF-IDF ranker``, where we can provide schemas to use inside the class. 3 functions where implemented to calculate the scores of documents but each function was used twice. 2 of the previous 3 functions use other 3 functions and the other uses 2, therefore, $ 3\times{3\times{2}} = 18 $ combinations are possible.
+
+
+The optimized rankers improved substantially, for example, from the results given, for the query *"greatest rock album"* the precision increased 
+- $n=10$ from 50% to 80%
+- $n=20$ from 35% to 60%
+- $n=50$ from 26% to 34%
+
+For the second example, *"best live performance"* a similar precision increase is detected
+- $n=10$ from 70% to 90%
+- $n=20$ from 55% % to 75%
+- $n=50$ from 34% % to 44%
+
+In the remaining of the queries it follows the same trend increasing the precision.
+
 
 ## Results
 
@@ -257,13 +273,24 @@ The search result files are in inside the ``results``folder.
 
 | Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time | Files                    |
 | :----------------------- | ---------------- | ------------------------- | --------------- | ------------------------ |
-| Digital_Music_Purchase   | 181.83 sec       | 63.09 ms                  | 14.17 ms        | results_tfidf.txt        |
-| Music                    | 1490.10 sec      | 384.32 ms                 | 71.09 ms        | results.tfidf-2.txt      |
+| Digital_Music_Purchase   | 181.83 s         | 63.09 ms                  | 14.17 ms        | results_tfidf.txt        |
+| Music                    | 1490.10 s        | 384.32 ms                 | 71.09 ms        | results.tfidf-2.txt      |
+
+#### TF-IDF Optimized Ranker
+
+| Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time |
+| :----------------------- | ---------------- | ------------------------- | --------------- |
+| Digital_Music_Purchase   | 316.193 s       | 1.279 s                   | 1.205 s         |
 
 #### BM25 Ranker
 
 | Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time | Files                  |
 | :----------------------- | ---------------- | ------------------------- | --------------- | ---------------------- |
-| Digital_Music_Purchase   | 115.65 sec       | 121.16 ms                 | 12.28 ms        | results_bm25.txt       |
-| Music                    | 787.02 sec       | 723.59 ms                 | 67.93 ms        | results_bm25-2.txt     |
+| Digital_Music_Purchase   | 115.65 s         | 121.16 ms                 | 12.28 ms        | results_bm25.txt       |
+| Music                    | 787.02 s         | 723.59 ms                 | 67.93 ms        | results_bm25-2.txt     |
+#### BM25 Optimized Ranker
+
+| Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time |
+| :----------------------- | ---------------- | ------------------------- | --------------- |
+| Digital_Music_Purchase   | 207.471 s       | 1.343 s                   | 1.412 s         |
 

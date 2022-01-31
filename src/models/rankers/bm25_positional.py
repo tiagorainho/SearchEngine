@@ -95,14 +95,10 @@ class BM25_Positional_Ranker(BM25_Ranker):
         for doc, bm25_score in scores.items():
             boost_score = self.calculate_boost(query, doc, term_to_posting_list)
 
-            # normalize scores
-            doc_length_normalization = math.log2((dl_div_avgdl[doc]-min_dl_div_avgdl)/(max_dl_div_avgdl-min_dl_div_avgdl)+1)
-            # doc_length_normalization = math.log2(dl_div_avgdl[doc])
-
-            # if boost_score > 0:
-            #     print(doc, "bm25", bm25_score, "boost", (self.boost_weight)*boost_score/doc_length_normalization)
-
-            scores[doc] = bm25_score + (self.boost_weight) * boost_score / doc_length_normalization
+            if boost_score > 0:
+                # normalize scores
+                doc_length_normalization = math.log2((dl_div_avgdl[doc]-min_dl_div_avgdl)/(max_dl_div_avgdl-min_dl_div_avgdl)+1)
+                scores[doc] = bm25_score + (self.boost_weight) * boost_score / doc_length_normalization
 
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 

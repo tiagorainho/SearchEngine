@@ -5,7 +5,7 @@
 
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Set, Tuple
-from models.posting_list import PostingList, PostingListFactory, PostingType
+from models.posting_list import PostingList, PostingType
 import math
 from models.rankers.tf_idf import TF_IDF_Ranker
 
@@ -35,22 +35,6 @@ class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
         self.c = math.log10(self.max_distance*1.5)
 
     
-    @staticmethod
-    def load_tiny(line: str):
-        return float(line)
-    
-    @staticmethod
-    def validate_schema(ranker_schema:str):
-        valid = True
-        if ranker_schema[3] != '.': error = True
-        if ranker_schema[0] not in TF_IDF_Ranker.allowed_schemas[0]: valid = False
-        if ranker_schema[1] not in TF_IDF_Ranker.allowed_schemas[1]: valid = False
-        if ranker_schema[2] not in TF_IDF_Ranker.allowed_schemas[2]: valid = False
-        if ranker_schema[4] not in TF_IDF_Ranker.allowed_schemas[0]: valid = False
-        if ranker_schema[5] not in TF_IDF_Ranker.allowed_schemas[1]: valid = False
-        if ranker_schema[6] not in TF_IDF_Ranker.allowed_schemas[2]: valid = False
-        if not valid: raise Exception(f'Schema "{ ranker_schema }" not supported for {TF_IDF_Ranker.__class__ }')
-
     def load_metadata(self, metadata: Dict[str, str]):
         if metadata['ranker'] != 'TF_IDF_OPTIMIZED':
             raise Exception(f'Ranker "{ metadata["ranker"] }" not compatible with {self.__class__}')
@@ -138,27 +122,17 @@ class TF_IDF_Positional_Ranker(TF_IDF_Ranker):
                 scores[doc] += lnc * uniformed_ltc[term]
         
         # calculate positional boost
-        for doc, bm25_score in scores.items():
+        for doc, tf in scores.items():
             boost_score = self.calculate_boost(query, doc, term_to_posting_list)
-            scores[doc] = bm25_score + (self.boost_weight) * boost_score
+            if boost_score > 0:
+                scores[doc] = tf + self.boost_weight * boost_score
         
         return sorted(scores.items(), key=lambda i: i[1], reverse=True)
 
-    def merge_calculations(self, posting_list: PostingList):
-        posting_list.idf = self.calculate_idf(posting_list, self.schema[5])
-    
-    def tiny_repr(self, posting_list: PostingList):
-        return str(posting_list.idf)
 
     def document_repr(self, posting_list: PostingList):
         return ' '.join([f"{str(doc_id)}:{','.join([str(position) for position in postings_list])}/{round(posting_list.tf_weight[doc_id], 3)}" for doc_id, postings_list in posting_list.posting_list.items()])
 
-    def term_repr(self, posting_list: PostingList):
-        return f'{self.document_repr(posting_list)}'
-
-    @staticmethod
-    def posting_list_init(posting_list: PostingList):
-        posting_list.tf_weight = defaultdict(int)
 
     def load_posting_list(self, line: str) -> PostingList:
         posting_list = self.posting_class()

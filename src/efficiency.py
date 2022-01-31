@@ -84,4 +84,4 @@ class Efficiency:
         self.search_times.append(search_time)
 
     def __str__(self):
-        return f'precision: {self.precisions}\nrecall: {self.recalls}\nfscore: {self.fscores}\nquery_thoughput: {self.query_thoughput()}'
+        return f'precision: {self.precisions}\nrecall: {self.recalls}\nfscore: {self.fscores}\nquery_thoughput: {self.query_thoughput()}\nndcg: {self.ndcg}'
