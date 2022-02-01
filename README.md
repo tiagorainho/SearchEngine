@@ -193,20 +193,6 @@ indexer = Spimi(posting_type=PostingType.Frequency, ranker=ranker)
 
 An example for versatility was implemented in the ``TF-IDF ranker``, where we can provide schemas to use inside the class. 3 functions where implemented to calculate the scores of documents but each function was used twice. 2 of the previous 3 functions use other 3 functions and the other uses 2, therefore, $ 3\times{3\times{2}} = 18 $ combinations are possible.
 
-
-The optimized rankers improved substantially, for example, from the results given, for the query *"greatest rock album"* the precision increased 
-- $n=10$ from 50% to 80%
-- $n=20$ from 35% to 60%
-- $n=50$ from 26% to 34%
-
-For the second example, *"best live performance"* a similar precision increase is detected
-- $n=10$ from 70% to 90%
-- $n=20$ from 55% % to 75%
-- $n=50$ from 34% % to 44%
-
-In the remaining of the queries it follows the same trend increasing the precision.
-
-
 ## Results
 
 The arguments provided for the **index creation** are the following:
@@ -271,26 +257,55 @@ The search result files are in inside the ``results``folder.
 
 #### TF-IDF Ranker
 
-| Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time | Files                    |
-| :----------------------- | ---------------- | ------------------------- | --------------- | ------------------------ |
-| Digital_Music_Purchase   | 181.83 s         | 63.09 ms                  | 14.17 ms        | results_tfidf.txt        |
-| Music                    | 1490.10 s        | 384.32 ms                 | 71.09 ms        | results.tfidf-2.txt      |
+| Dataset                  | Number of Results  | Avg Search Time  | Avg Query Thoughput  | Avg Precision | Avg Recall | Avg NDCG | Avg Fscore |
+| :----------------------- | ------------------ |----------------- | -------------------- | ------------- | ---------- | -------- | ---------- |
+| Digital_Music_Purchase   | 10                 | 398 ms           | 25.432               | 17.69 %       | 2.23 %     | 0.035    | 0.039      |
+| Digital_Music_Purchase   | 20                 | 395 ms           | 50.695               | 13.07 %       | 3.34 %     | 0.050    | 0.053      |
+| Digital_Music_Purchase   | 50                 | 412 ms           | 121.138              | 05.69 %       | 3.66 %     | 0.083    | 0.044      |
 
 #### TF-IDF Optimized Ranker
 
-| Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time |
-| :----------------------- | ---------------- | ------------------------- | --------------- |
-| Digital_Music_Purchase   | 316.193 s       | 1.279 s                   | 1.205 s         |
+| Dataset                  | Number of Results  | Avg Search Time  | Avg Query Thoughput  | Avg Precision | Avg Recall | Avg NDCG | Avg Fscore |
+| :----------------------- | ------------------ |----------------- | -------------------- | ------------- | ---------- | -------- | ---------- |
+| Digital_Music_Purchase   | 10                 | 1145 ms          | 8.736                | 20.77 %       | 2.66 %     | 0.037    | 0.047      |
+| Digital_Music_Purchase   | 20                 | 1150 ms          | 17.392               | 14.62 %       | 3.73 %     | 0.054    | 0.060      |
+| Digital_Music_Purchase   | 50                 | 1144 ms          | 43.706               | 06.46 %       | 4.20 %     | 0.089    | 0.051      |
 
 #### BM25 Ranker
 
-| Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time | Files                  |
-| :----------------------- | ---------------- | ------------------------- | --------------- | ---------------------- |
-| Digital_Music_Purchase   | 115.65 s         | 121.16 ms                 | 12.28 ms        | results_bm25.txt       |
-| Music                    | 787.02 s         | 723.59 ms                 | 67.93 ms        | results_bm25-2.txt     |
+| Dataset                  | Number of Results  | Avg Search Time  | Avg Query Thoughput  | Avg Precision | Avg Recall | Avg NDCG  | Avg Fscore |
+| :----------------------- | ------------------ |----------------- | -------------------- | ------------- | ---------- | --------- | ---------- |
+| Digital_Music_Purchase   | 10                 | 446 ms           | 22.424               | 65.36 %       | 08.94 %    | 4979.9    | 0.157      |
+| Digital_Music_Purchase   | 20                 | 461 ms           | 43.425               | 54.23 %       | 14.62 %    | 5296.4    | 0.230      |
+| Digital_Music_Purchase   | 50                 | 471 ms           | 106.219              | 36.92 %       | 24.96 %    | 5559.3    | 0.296      |
+
+
 #### BM25 Optimized Ranker
 
-| Dataset                  | Index build time | Avg Searcher Startup Time | Avg Search Time |
-| :----------------------- | ---------------- | ------------------------- | --------------- |
-| Digital_Music_Purchase   | 207.471 s       | 1.343 s                   | 1.412 s         |
+| Dataset                  | Number of Results  | Avg Search Time  | Avg Query Thoughput  | Avg Precision | Avg Recall | Avg NDCG  | Avg Fscore |
+| :----------------------- | ------------------ |----------------- | -------------------- | ------------- | ---------- | --------- | ---------- |
+| Digital_Music_Purchase   | 10                 | 1236 ms          | 8.09                 | 81.54 %       | 11.16 %    | 9774.2    | 0.196      |
+| Digital_Music_Purchase   | 20                 | 1252 ms          | 15.979               | 68.85 %       | 18.74 %    | 10329.1   | 0.294      |
+| Digital_Music_Purchase   | 50                 | 1282 ms          | 39.0                 | 46.31 %       | 31.55 %    | 10871.4   | 0.374      |
 
+
+
+## Results Discussion
+
+The optimized rankers improved substantially, for example, from the results given, for the query *"greatest rock album"* the precision increased 
+- $n=10$ from 50% to 80%
+- $n=20$ from 35% to 60%
+- $n=50$ from 26% to 34%
+
+For the second example, *"best live performance"* a similar precision increase is detected
+- $n=10$ from 70% to 90%
+- $n=20$ from 55% % to 75%
+- $n=50$ from 34% % to 44%
+
+In the remaining of the queries it follows the same trend increasing the precision as seen in the [TF-IDF Table](#tf-idf-optimized-ranker) and [BM25 Table](#bm25-optimized-ranker).
+
+It makes sense for the TF-IDF to have lower performance than the BM25 because in the TF-IDF the size of the document is not taken into account, because of that a large document is much more probable to be choosen than a smaller document. The TF-IDF Optimized also does not take into account the size of the document, this is because we dont want to change the tf-idf identity implementation, that would not make it fair to compare later with the simple TF-IDF. In conclusion, it makes sense that there is an improvement but not by a lot because larger documents will always be prioritized which does not happen in the queries given by the professor.
+
+The BM25 also behaves how it should maintaining high precision. The BM25 optimized surpasses the simple BM25 implementation which is predictable as the prioritization of documents based on the size of the document is already taken cared of. Also, in the boost function we also take into account the size of the document because we want to prioritize documents with a high ratio of what the query is requesting, in the order of the query and the size of the document it self.
+
+In conclusion, all the algorithms behave approximatly of how is is supposed and the best is clearly the BM25 and BM25 Optimized depending on time constraints.

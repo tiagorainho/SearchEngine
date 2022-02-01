@@ -32,15 +32,14 @@ if __name__ == '__main__':
     stop_words = 'stop_words.txt'
     min_token_length = 0
     language = None
-    texts = [
-        'Hello nice to meet you',
-        'It is my fault album the rock l album went bust',
-        'greatest album i have ever heard rock']
-    search_terms = "greatest rock album"
+    # texts = ['this rock album is amazing', 'greatest rock album', 'best folk cd']
+    # search_terms = "greatest rock album"
+    texts = ['good games for kids', 'good old games games', 'haha lols are funny']
+    search_terms = "good old games games"
     max_ram = 95
-    max_block_size = 2000
-    posting_list_type = PostingType.POSITIONAL
-    ranking_method = RankingMethod.BM25_OPTIMIZED
+    max_block_size = 20
+    posting_list_type = PostingType.FREQUENCY
+    ranking_method = RankingMethod.TF_IDF
     tf_idf_schema = 'lnc.ltc'
     n_results = 3
     bm25_k = 1.2

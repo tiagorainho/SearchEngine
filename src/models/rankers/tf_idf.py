@@ -40,8 +40,6 @@ class TF_IDF_Ranker(Ranker):
             TF_IDF_Ranker.validate_schema(kwargs['schema'])
         else:
             self.schema = 'lnc.ltc'
-
-
     
     @staticmethod
     def load_tiny(line: str):
@@ -50,7 +48,7 @@ class TF_IDF_Ranker(Ranker):
     @staticmethod
     def validate_schema(ranker_schema:str):
         valid = True
-        if ranker_schema[3] != '.': error = True
+        if ranker_schema[3] != '.': valid = False
         if ranker_schema[0] not in TF_IDF_Ranker.allowed_schemas[0]: valid = False
         if ranker_schema[1] not in TF_IDF_Ranker.allowed_schemas[1]: valid = False
         if ranker_schema[2] not in TF_IDF_Ranker.allowed_schemas[2]: valid = False
@@ -138,7 +136,7 @@ class TF_IDF_Ranker(Ranker):
             doc_id, freq = tuple(posting_str.split(':'))
             posting_list.posting_list[doc_id] = int(freq)
             posting_list.tf_weight[doc_id] = float(weight)
-
+        
         return posting_list
 
     def after_add_tokens(self, term_to_postinglist: Dict[str, PostingList], tokens: List[str], doc_id: int):

@@ -1,8 +1,11 @@
 import math
-from pickletools import read_uint1
-import re
 from statistics import mean, median
 from typing import Dict, List, Tuple
+from models.index import InvertedIndex
+from models.posting_list import PostingType
+from models.ranker import RankerFactory, RankingMethod
+from models.tokenizer import Tokenizer
+import time
 
 
 class Efficiency:
@@ -85,3 +88,60 @@ class Efficiency:
 
     def __str__(self):
         return f'precision: {self.precisions}\nrecall: {self.recalls}\nfscore: {self.fscores}\nquery_thoughput: {self.query_thoughput()}\nndcg: {self.ndcg}'
+
+
+
+if __name__ == '__main__':
+    from searcher import search
+    verbose = False
+    search_index = 'cache/index/bm25_optimized.index'
+    n_results = [10]
+    queries = [
+        'greatest rock album',
+        'best live performance',
+        'christmas songs',
+        'balkan music',
+        'worst buy',
+        "70's country music",
+        'one hit wonder',
+        'most underrated',
+        'several instruments',
+        'abbey road studios',
+        'easy listening',
+        'great cover art',
+        'house party songs'
+    ]
+
+    index = InvertedIndex(None, output_path=search_index)
+    ranker = RankerFactory(RankingMethod(index.metadata['ranker']))(PostingType(index.metadata['posting_class']))
+    tokenizer = Tokenizer(index.metadata['min_token_length'], index.metadata['stop_words'], index.metadata['language'])
+
+    efficiency = Efficiency()
+    t1 = time.perf_counter()
+    precision_sum = 0
+    search_times_sum = 0
+    fscores_sum = 0
+    ndcg_sum = 0
+    recalls_sum = 0
+    total_combinations = len(queries)*len(n_results)
+    for query in queries:
+        for n in n_results:
+            start_time = time.perf_counter()
+            results = search(index, ranker, tokenizer, query.split(' '), n)
+            efficiency.add_search_time(time.perf_counter()-start_time)
+            efficiency.calculate_stats(query, results)
+
+    for query in queries:
+        precision_sum += efficiency.precisions[query]
+        fscores_sum += efficiency.fscores[query]
+        ndcg_sum += efficiency.ndcg[query]
+        recalls_sum += efficiency.recalls[query]
+            
+    print(search_index)
+    print(f"mean precision: {round(precision_sum*100/total_combinations, 3)} %")
+    print(f"mean recall: {round(recalls_sum*100/total_combinations, 3)} %")
+    print(f"mean query thoughput: {round(efficiency.query_thoughput(), 3)}")
+    print(f"mean search times: {round(sum(efficiency.search_times)/total_combinations, 3)} s")
+    print(f"mean fscore: {round(fscores_sum/total_combinations, 5)}")
+    print(f"mean ndcg: {round(ndcg_sum/total_combinations, 5)}")
+    print(f'total test time { round(time.perf_counter() - t1, 3) } s')
