@@ -148,7 +148,9 @@ A ``light_search()`` method was also implemented in the ``InvertedIndex`` to add
 
 The previous method cared of proper ranking because would only provide us with the documents in which a term was found. This is not that useful because we would either get a lot of documents or probably none (feast of famine). For that reason, ``rankers`` are used to provide methods that improve the efficiency of returned documents. The method used in each ranker to do this job is the ``order()`` method which ranks the documents based on the implemented function.
 
-The default available rankers are ``TF-IDF``, ``TF-IDF-OPTIMIZED``, ``BM25`` and ``BM25-OPTIMIZED``, the ones named *optimized* are just like the others but contain a boost function which prioritizes documents in which some word pattern happens in the query. The implementation changes because for this boost we need the positions of the term on each document so the ``Positional Posting List`` was used. Other implementations may be created similary to the ``Posting Lists``. Extend the ``Ranker`` class found in ``src/models/ranker.py`` file and override the needed methods:
+The default available rankers are ``TF-IDF``, ``TF-IDF-OPTIMIZED``, ``BM25`` and ``BM25-OPTIMIZED``, the ones named *optimized* are just like the others but contain a boost function which prioritizes documents in which some word pattern happens in the query. The implementation changes because for this boost we need the positions of the term on each document so the ``Positional Posting List`` was used. The ``TF-IDF-OPTIMIZED`` algorithm will not normalize the boost value based on the size of the document because in the ``TF-IDF`` we dont extract that information, we opted to continue to not included because it would be unfair to compare 2 algorithms that would not take into account that information but then one would (the optimized).
+
+Other implementations may be created similary to the ``Posting Lists``. Extend the ``Ranker`` class found in ``src/models/ranker.py`` file and override the needed methods:
 ```python
     def __init__(self, posting_type: PostingType, *args, **kwargs):
 
