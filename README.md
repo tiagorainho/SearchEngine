@@ -148,7 +148,7 @@ A ``light_search()`` method was also implemented in the ``InvertedIndex`` to add
 
 The previous method cared of proper ranking because would only provide us with the documents in which a term was found. This is not that useful because we would either get a lot of documents or probably none (feast of famine). For that reason, ``rankers`` are used to provide methods that improve the efficiency of returned documents. The method used in each ranker to do this job is the ``order()`` method which ranks the documents based on the implemented function.
 
-The default available rankers are ``TF-IDF``, ``TF-IDF-OPTIMIZED``, ``BM25`` and ``BM25-OPTIMIZED``. More can be created similary to the ``Posting Lists``. Extend the ``Ranker`` class found in ``src/models/ranker.py`` file and override the needed methods:
+The default available rankers are ``TF-IDF``, ``TF-IDF-OPTIMIZED``, ``BM25`` and ``BM25-OPTIMIZED``, the ones named *optimized* are just like the others but contain a boost function which prioritizes documents in which some word pattern happens in the query. The implementation changes because for this boost we need the positions of the term on each document so the ``Positional Posting List`` was used. Other implementations may be created similary to the ``Posting Lists``. Extend the ``Ranker`` class found in ``src/models/ranker.py`` file and override the needed methods:
 ```python
     def __init__(self, posting_type: PostingType, *args, **kwargs):
 
@@ -251,9 +251,8 @@ Data Structure where the document id links to a list of positions where the term
 
 ### Search
 
-The following table presents the statistics and search results related to the search of the query list provided by the professor and using an index with ``frequency posting lists`` with both ``BM25`` and ``TF-IDF`` rankers. (``TF-IDF`` used the ``lnc.ltc`` schema)
-
-The search result files are in inside the ``results``folder.
+The following table presents the statistics and search results related to the search of the query list provided by the professor and using an index with both ``BM25`` and ``TF-IDF`` rankers (``TF-IDF`` used the ``lnc.ltc`` schema).
+There is also two other rankers: ``BM25-OPTIMIZED``and ``TF-IDF-OPTIMIZED``. The purpose of these is to boost documents based on the words of the query and its respective positions.
 
 #### TF-IDF Ranker
 
